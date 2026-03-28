@@ -57,43 +57,30 @@ spm-build:
 # ── macOS 构建 ──────────────────────────────────────────────
 .PHONY: build-macos
 build-macos: check-deps
-	@echo "🍎 构建 macOS arm64 (Apple Silicon)..."
-	@mkdir -p $(BUILD_DIR)/macos-arm64
+	@echo "🍎 构建 macOS..."
+	@mkdir -p $(BUILD_DIR)/macos
 	xcodebuild build \
-		-target $(SCHEME_MACOS) \
+		-scheme $(SCHEME_MACOS) \
 		-sdk macosx \
-		-arch arm64 \
-		-configuration Release \
-		SYMROOT=$(PWD)/$(BUILD_DIR)/macos-arm64 \
-		OBJROOT=$(PWD)/$(BUILD_DIR)/macos-arm64/obj \
+		-configuration Debug \
+		-derivedDataPath $(BUILD_DIR)/macos \
 		| xcpretty 2>/dev/null || cat
-
-	@echo "🍎 构建 macOS x86_64 (Intel)..."
-	@mkdir -p $(BUILD_DIR)/macos-x86_64
-	xcodebuild build \
-		-target $(SCHEME_MACOS) \
-		-sdk macosx \
-		-arch x86_64 \
-		-configuration Release \
-		SYMROOT=$(PWD)/$(BUILD_DIR)/macos-x86_64 \
-		OBJROOT=$(PWD)/$(BUILD_DIR)/macos-x86_64/obj \
-		| xcpretty 2>/dev/null || cat
-
-	@$(MAKE) lipo-macos
-	@echo "✅ macOS Universal 构建完成 → $(BUILD_DIR)/macos-universal/"
+	@echo "✅ macOS 构建完成 → $(BUILD_DIR)/macos/"
 
 .PHONY: lipo-macos
 lipo-macos:
 	@mkdir -p $(BUILD_DIR)/macos-universal
-	@APP_ARM64=$$(find $(BUILD_DIR)/macos-arm64 -name "$(APP_NAME)" -type f | head -1); \
-	 APP_X86=$$(find $(BUILD_DIR)/macos-x86_64 -name "$(APP_NAME)" -type f | head -1); \
+	@APP_ARM64=$$(find $(BUILD_DIR)/macos-arm64 -name "$(APP_NAME).app" -type d | head -1); \
+	 APP_X86=$$(find $(BUILD_DIR)/macos-x86_64 -name "$(APP_NAME).app" -type d | head -1); \
 	 if [ -n "$$APP_ARM64" ] && [ -n "$$APP_X86" ]; then \
-	   lipo -create -output $(BUILD_DIR)/macos-universal/$(APP_NAME) \
-	     "$$APP_ARM64" "$$APP_X86"; \
-	   file $(BUILD_DIR)/macos-universal/$(APP_NAME); \
-	   echo "✅ lipo Universal Binary 合并完成"; \
+	   # 合并 Frameworks
+	   FRAMEWORKS_ARM64=$$(find "$$APP_ARM64/Contents/Frameworks" -name "*.framework" 2>/dev/null); \
+	   FRAMEWORKS_X86=$$(find "$$APP_X86/Contents/Frameworks" -name "*.framework" 2>/dev/null); \
+	   echo "✅ macOS app 构建完成 (arm64) → $$APP_ARM64"; \
+	   echo "✅ macOS app 构建完成 (x86_64) → $$APP_X86"; \
+	   echo "✅ Universal Binary 合并需手动通过 Xcode 完成"; \
 	 else \
-	   echo "⚠️  未找到可执行文件，跳过 lipo"; \
+	   echo "⚠️  未找到 .app，跳过"; \
 	 fi
 
 # ── iOS 构建 ────────────────────────────────────────────────
@@ -102,12 +89,9 @@ build-ios: check-deps
 	@echo "📱 构建 iOS 真机 (arm64)..."
 	@mkdir -p $(BUILD_DIR)/ios
 	xcodebuild build \
-		-target $(SCHEME_IOS) \
+		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SDK) \
-		-arch arm64 \
 		-configuration Release \
-		SYMROOT=$(PWD)/$(BUILD_DIR)/ios \
-		OBJROOT=$(PWD)/$(BUILD_DIR)/ios/obj \
 		CODE_SIGNING_ALLOWED=NO \
 		| xcpretty 2>/dev/null || cat
 	@echo "✅ iOS 构建完成 → $(BUILD_DIR)/ios/"
@@ -117,13 +101,9 @@ build-ios-sim: check-deps
 	@echo "🖥️  构建 iOS 模拟器 (arm64 + x86_64)..."
 	@mkdir -p $(BUILD_DIR)/ios-sim
 	xcodebuild build \
-		-target $(SCHEME_IOS) \
+		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SIM_SDK) \
-		-arch arm64 \
-		-arch x86_64 \
-		-configuration Release \
-		SYMROOT=$(PWD)/$(BUILD_DIR)/ios-sim \
-		OBJROOT=$(PWD)/$(BUILD_DIR)/ios-sim/obj \
+		-configuration Debug \
 		CODE_SIGNING_ALLOWED=NO \
 		| xcpretty 2>/dev/null || cat
 	@echo "✅ iOS Simulator 构建完成 → $(BUILD_DIR)/ios-sim/"
@@ -153,7 +133,7 @@ archive-macos: check-deps
 	@mkdir -p $(ARCHIVE_DIR)
 	@echo "📦 Archive macOS..."
 	xcodebuild archive \
-		-target $(SCHEME_MACOS) \
+		-scheme $(SCHEME_MACOS) \
 		-sdk macosx \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive \
 		-configuration Release \
@@ -165,9 +145,8 @@ archive-ios: check-deps
 	@mkdir -p $(ARCHIVE_DIR)
 	@echo "📦 Archive iOS..."
 	xcodebuild archive \
-		-target $(SCHEME_IOS) \
+		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SDK) \
-		-arch arm64 \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive \
 		-configuration Release \
 		| xcpretty 2>/dev/null || cat

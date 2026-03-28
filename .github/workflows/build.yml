@@ -15,7 +15,9 @@ jobs:
     runs-on: macos-14
     strategy:
       matrix:
-        arch: [arm64, x86_64]
+        include:
+          - arch: arm64
+          - arch: x86_64
 
     steps:
       - name: Checkout
@@ -27,8 +29,7 @@ jobs:
       - name: Build macOS (${{ matrix.arch }})
         run: |
           xcodebuild build \
-            -project FlacMusicApp.xcodeproj \
-            -target FlacMusicApp-macOS \
+            -scheme FlacMusicApp-macOS \
             -sdk macosx \
             -arch ${{ matrix.arch }} \
             -configuration Release \
@@ -46,9 +47,6 @@ jobs:
   build-ios:
     name: Build iOS (Simulator)
     runs-on: macos-14
-    strategy:
-      matrix:
-        destination: ['platform=iOS Simulator,name=iPhone 15 Pro,OS=17.0']
 
     steps:
       - name: Checkout
@@ -60,13 +58,12 @@ jobs:
       - name: Build iOS Simulator
         run: |
           xcodebuild build \
-            -project FlacMusicApp.xcodeproj \
-            -target FlacMusicApp-iOS \
+            -scheme FlacMusicApp-iOS \
             -sdk iphonesimulator \
             -arch arm64 \
             -configuration Release \
             -derivedDataPath DerivedData \
-            -destination '${{ matrix.destination }}' \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.0' \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Upload build artifacts
