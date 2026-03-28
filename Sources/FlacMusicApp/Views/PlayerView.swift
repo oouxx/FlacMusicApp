@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct PlayerView: View {
     @ObservedObject var player = PlayerManager.shared
+    @State private var showLyrics = false
     
     public init() {}
     
@@ -53,6 +54,15 @@ public struct PlayerView: View {
                     }
                     
                     Button {
+                        showLyrics = true
+                    } label: {
+                        Image(systemName: "text.quote")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
                         player.stop()
                     } label: {
                         Image(systemName: "xmark")
@@ -70,6 +80,44 @@ public struct PlayerView: View {
                         .tint(.accentColor)
                 }
             }
+            .sheet(isPresented: $showLyrics) {
+                LyricsView(lyrics: player.currentLyrics, songName: song.name, artist: song.artist)
+            }
+        }
+    }
+}
+
+public struct LyricsView: View {
+    let lyrics: String
+    let songName: String
+    let artist: String
+    @Environment(\.dismiss) var dismiss
+    
+    public init(lyrics: String, songName: String, artist: String) {
+        self.lyrics = lyrics
+        self.songName = songName
+        self.artist = artist
+    }
+    
+    public var body: some View {
+        VStack {
+            Text(songName)
+                .font(.headline)
+            Text(artist)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            ScrollView {
+                Text(lyrics.isEmpty ? "暂无歌词" : lyrics)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            }
+            
+            Button("关闭") {
+                dismiss()
+            }
+            .padding()
         }
     }
 }

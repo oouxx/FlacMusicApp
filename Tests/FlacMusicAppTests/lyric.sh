@@ -1,0 +1,17 @@
+curl 'https://flac.music.hi.cn/ajax.php?act=getLyric' \
+  -H 'accept: application/json, text/javascript, */*; q=0.01' \
+  -H 'accept-language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7' \
+  -H 'content-type: application/x-www-form-urlencoded; charset=UTF-8' \
+  -b 'sl-session=DOTBGAWWyGlGOzCiOU0MMw==; sl-challenge-server=cloud; sl_jwt_session=bPFvR8aZx2lTTIZEu97vPg==; sl_jwt_sign=' \
+  -H 'dnt: 1' \
+  -H 'origin: https://flac.music.hi.cn' \
+  -H 'priority: u=1, i' \
+  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36' \
+  -H 'x-requested-with: XMLHttpRequest' \
+  --data-raw 'platform=kuwo&songid=553342231&time=1774685119&sign=a6470821f0e52f06b48b038d71bea1b3'

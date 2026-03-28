@@ -33,6 +33,8 @@ public final class MusicAPIService: @unchecked Sendable {
     public func updateCookies(from webView: WKWebView) {
         webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
             let cookieStr = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+            print("[Cookies] Got \(cookies.count) cookies")
+            print("[Cookies] Cookie string: \(cookieStr.prefix(200))")
             self?.cookieString = cookieStr
         }
     }
@@ -53,32 +55,72 @@ public final class MusicAPIService: @unchecked Sendable {
     
     // MARK: - Get Download URL
     
-    public func getSongURL(songId: String, format: AudioFormat) async throws -> String {
-        return try await fetchHiCNSongURL(songId: songId, format: format, platform: currentPlatform)
+    private var signCache: [String: String] = [:]
+    private var timeCache: [String: Int] = [:]
+    
+    public func cacheSign(for songId: String, sign: String) {
+        signCache[songId] = sign
+    }
+    
+    public func cacheTime(for songId: String, time: Int) {
+        timeCache[songId] = time
+    }
+    
+    public func getSongURL(songId: String, format: AudioFormat, sign: String? = nil, time: Int? = nil) async throws -> String {
+        let cachedSign = sign ?? signCache[songId] ?? ""
+        let cachedTime = time ?? timeCache[songId]
+        return try await fetchHiCNSongURL(songId: songId, format: format, platform: currentPlatform, sign: cachedSign, time: cachedTime)
     }
     
     // MARK: - Get Lyrics
     
-    public func getLyrics(songId: String) async throws -> String {
-        let urlString = "https://flac.music.hi.cn/api/lrc?id=\(songId)"
-        guard let url = URL(string: urlString) else {
+    public func getLyrics(songId: String, sign: String? = nil, time: Int? = nil) async throws -> String {
+        guard let url = URL(string: "\(hiCNBase)/ajax.php?act=getLyric") else {
             throw MusicAPIError.invalidURL
         }
         
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
         if !cookieString.isEmpty {
             request.setValue(cookieString, forHTTPHeaderField: "Cookie")
+            print("[Lyrics] Using cookies: \(cookieString.prefix(100))...")
+        }
+        request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
+        request.setValue(hiCNBase, forHTTPHeaderField: "Origin")
+        request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
+        
+        let cachedSign = sign ?? signCache[songId] ?? ""
+        let cachedTime = time ?? timeCache[songId] ?? Int(Date().timeIntervalSince1970)
+        
+        var body = "platform=\(currentPlatform.rawValue)&songid=\(songId)&time=\(cachedTime)"
+        if !cachedSign.isEmpty {
+            body += "&sign=\(cachedSign)"
+        }
+        request.httpBody = body.data(using: .utf8)
+        
+        print("[Lyrics] Request body: \(body)")
+        
+        let (data, response) = try await session.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            print("[Lyrics] Response status: \(httpResponse.statusCode)")
         }
         
-        let (data, _) = try await session.data(for: request)
+        if let responseText = String(data: data, encoding: .utf8) {
+            print("[Lyrics] Response: \(responseText.prefix(300))")
+        }
         
-        if let text = String(data: data, encoding: .utf8) {
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let lrc = json["lrc"] as? String {
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let code = json["code"] as? Int, code != 0 {
+                let msg = json["msg"] as? String ?? "unknown error"
+                print("[Lyrics] API error: \(code) - \(msg)")
+            }
+            if let lrc = json["data"] as? String {
                 return lrc
             }
-            return text
         }
+        
         throw MusicAPIError.noData
     }
     
@@ -123,6 +165,22 @@ public final class MusicAPIService: @unchecked Sendable {
             throw MusicAPIError.serverError
         }
         
+        // Cache signs and times from search results
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let dataObj = json["data"] as? [String: Any],
+           let list = dataObj["list"] as? [[String: Any]] {
+            for item in list {
+                if let id = item["id"] as? String {
+                    if let sign = item["sign"] as? String {
+                        signCache[id] = sign
+                    }
+                    if let timeVal = item["time"] as? Int {
+                        timeCache[id] = timeVal
+                    }
+                }
+            }
+        }
+        
         // Try output.json format first
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let list = json["data"] as? [String: Any],
@@ -138,18 +196,51 @@ public final class MusicAPIService: @unchecked Sendable {
         throw MusicAPIError.parseError
     }
     
-    private func fetchHiCNSongURL(songId: String, format: AudioFormat, platform: MusicPlatform) async throws -> String {
-        guard let url = URL(string: "\(hiCNBase)/api/url?id=\(songId)&type=\(format.rawValue)") else {
+    private func fetchHiCNSongURL(songId: String, format: AudioFormat, platform: MusicPlatform, sign: String = "", time: Int? = nil) async throws -> String {
+        guard let url = URL(string: "\(hiCNBase)/ajax.php?act=getUrl") else {
             throw MusicAPIError.invalidURL
         }
         
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
         if !cookieString.isEmpty {
             request.setValue(cookieString, forHTTPHeaderField: "Cookie")
+            print("[PlayerManager] Using cookies for getURL: \(cookieString.prefix(100))...")
+        } else {
+            print("[PlayerManager] WARNING: No cookies for getURL!")
         }
         request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
+        request.setValue(hiCNBase, forHTTPHeaderField: "Origin")
+        request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
+        
+        let bitrate: String
+        switch format {
+        case .flac: bitrate = "2000"
+        case .ape: bitrate = "1000"
+        case .mp3320: bitrate = "320"
+        case .mp3128: bitrate = "128"
+        }
+        
+        let requestTime = time ?? Int(Date().timeIntervalSince1970)
+        var body = "platform=\(platform.rawValue)&songid=\(songId)&format=\(format.rawValue)&bitrate=\(bitrate)&time=\(requestTime)"
+        if !sign.isEmpty {
+            body += "&sign=\(sign)"
+        }
+        print("[PlayerManager] Request body: \(body)")
+        request.httpBody = body.data(using: .utf8)
+        
+        print("[PlayerManager] Request body: \(body)")
         
         let (data, response) = try await session.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            print("[PlayerManager] Response status: \(httpResponse.statusCode)")
+        }
+        
+        if let responseText = String(data: data, encoding: .utf8) {
+            print("[PlayerManager] Response: \(responseText.prefix(300))")
+        }
         
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
@@ -373,6 +464,18 @@ public final class MusicAPIService: @unchecked Sendable {
         
         return Song(id: id, name: name, artist: artist, album: album,
                    coverUrl: cover, duration: duration, formats: formats)
+    }
+    
+    private func cacheSignFromSearch(_ songs: [Song], responseData: Data) {
+        if let json = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
+           let data = json["data"] as? [String: Any],
+           let list = data["list"] as? [[String: Any]] {
+            for item in list {
+                if let id = item["id"] as? String, let sign = item["sign"] as? String {
+                    signCache[id] = sign
+                }
+            }
+        }
     }
 }
 

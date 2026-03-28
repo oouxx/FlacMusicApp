@@ -12,6 +12,7 @@ public final class PlayerManager: ObservableObject {
     @Published public var currentTime: Double = 0
     @Published public var duration: Double = 0
     @Published public var isLoading: Bool = false
+    @Published public var currentLyrics: String = ""
     
     private var player: AVPlayer?
     private var timeObserver: Any?
@@ -38,6 +39,13 @@ public final class PlayerManager: ObservableObject {
         await MainActor.run {
             isLoading = true
             currentSong = song
+            // 清理旧的 player 和 observer
+            if let observer = timeObserver {
+                player?.removeTimeObserver(observer)
+                timeObserver = nil
+            }
+            player?.pause()
+            player = nil
         }
         
         do {
@@ -68,6 +76,8 @@ public final class PlayerManager: ObservableObject {
                 
                 updateNowPlayingInfo()
             }
+            
+            loadLyrics(songId: song.id)
         } catch {
             await MainActor.run {
                 isLoading = false
@@ -94,8 +104,22 @@ public final class PlayerManager: ObservableObject {
         currentSong = nil
         currentTime = 0
         duration = 0
+        currentLyrics = ""
         
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+    
+    private func loadLyrics(songId: String) {
+        Task {
+            do {
+                let lyrics = try await MusicAPIService.shared.getLyrics(songId: songId)
+                await MainActor.run {
+                    currentLyrics = lyrics
+                }
+            } catch {
+                print("[PlayerManager] Failed to load lyrics: \(error)")
+            }
+        }
     }
     
     public func seek(to time: Double) {

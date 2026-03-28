@@ -1,5 +1,7 @@
 import Foundation
 import Combine
+import AppKit
+import UniformTypeIdentifiers
 
 public final class DownloadManager: ObservableObject {
     
@@ -38,7 +40,9 @@ public final class DownloadManager: ObservableObject {
         updateTask(id: taskId) { $0.state = .downloading }
         
         do {
+            print("[DownloadManager] Starting download for: \(song.name), format: \(format)")
             let urlString = try await MusicAPIService.shared.getSongURL(songId: song.id, format: format)
+            print("[DownloadManager] Got URL: \(urlString)")
             guard let url = URL(string: urlString) else {
                 updateTask(id: taskId) { $0.state = .failed("无效的下载地址") }
                 return
@@ -46,17 +50,31 @@ public final class DownloadManager: ObservableObject {
             
             let (tempURL, _) = try await downloadSession.download(from: url)
             
-            // Save to Downloads
+            // Show save panel
             let fileName = "\(song.artist) - \(song.name).\(format.rawValue)"
-            let destURL = downloadsDirectory.appendingPathComponent(sanitize(fileName))
             
-            try? FileManager.default.removeItem(at: destURL)
-            try FileManager.default.moveItem(at: tempURL, to: destURL)
+            let destURL: URL? = await MainActor.run { () -> URL? in
+                let savePanel = NSSavePanel()
+                savePanel.nameFieldStringValue = sanitize(fileName)
+                savePanel.allowedContentTypes = [.audio]
+                savePanel.canCreateDirectories = true
+                
+                let response = savePanel.runModal()
+                return response == .OK ? savePanel.url : nil
+            }
+            
+            guard let finalURL = destURL else {
+                updateTask(id: taskId) { $0.state = .failed("用户取消") }
+                return
+            }
+            
+            try? FileManager.default.removeItem(at: finalURL)
+            try FileManager.default.moveItem(at: tempURL, to: finalURL)
             
             updateTask(id: taskId) { 
                 $0.state = .completed
                 $0.progress = 1.0
-                $0.localURL = destURL
+                $0.localURL = finalURL
             }
         } catch {
             updateTask(id: taskId) { $0.state = .failed(error.localizedDescription) }
@@ -85,13 +103,11 @@ public final class DownloadManager: ObservableObject {
     }
     
     private var downloadsDirectory: URL {
-        #if os(macOS)
-        return FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        #else
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        #endif
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let flacDir = cacheDir.appendingPathComponent("FlacMusicApp/Downloads")
+        
+        try? FileManager.default.createDirectory(at: flacDir, withIntermediateDirectories: true)
+        return flacDir
     }
     
     private func sanitize(_ name: String) -> String {
