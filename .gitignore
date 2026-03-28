@@ -49,3 +49,5 @@ Packages/
 # Temporary
 *.tmp
 *.temp
+
+.sisyphus/

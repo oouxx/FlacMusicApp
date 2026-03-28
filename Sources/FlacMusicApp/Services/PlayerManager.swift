@@ -14,9 +14,11 @@ public final class PlayerManager: ObservableObject {
     @Published public var isLoading: Bool = false
     @Published public var currentLyrics: String = ""
     
+    private let playlistManager = PlaylistManager.shared
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
+    private var endObserver: NSObjectProtocol?
     
     private init() {
         setupAudioSession()
@@ -36,14 +38,22 @@ public final class PlayerManager: ObservableObject {
     // MARK: - Playback Control
     
     public func play(song: Song) async {
+        if playlistManager.queue.isEmpty || playlistManager.currentSong?.id != song.id {
+            playlistManager.addToQueue(song)
+        }
+        
+        await playCurrentSong(song)
+    }
+    
+    private func playCurrentSong(_ song: Song) async {
         await MainActor.run {
             isLoading = true
             currentSong = song
-            // 清理旧的 player 和 observer
             if let observer = timeObserver {
                 player?.removeTimeObserver(observer)
                 timeObserver = nil
             }
+            endObserver = nil
             player?.pause()
             player = nil
         }
@@ -59,7 +69,6 @@ public final class PlayerManager: ObservableObject {
                 let playerItem = AVPlayerItem(url: url)
                 player = AVPlayer(playerItem: playerItem)
                 
-                // Observe duration
                 playerItem.publisher(for: \.status)
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] status in
@@ -71,6 +80,7 @@ public final class PlayerManager: ObservableObject {
                     .store(in: &cancellables)
                 
                 setupTimeObserver()
+                setupEndObserver()
                 player?.play()
                 isPlaying = true
                 
@@ -81,9 +91,62 @@ public final class PlayerManager: ObservableObject {
         } catch {
             await MainActor.run {
                 isLoading = false
-                currentSong = nil
             }
         }
+    }
+    
+    private func setupEndObserver() {
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player?.currentItem,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleSongEnded()
+        }
+    }
+    
+    private func handleSongEnded() {
+        switch playlistManager.playMode {
+        case .loopOne:
+            seek(to: 0)
+            player?.play()
+        case .loopAll, .shuffle:
+            playlistManager.playNext()
+            if let nextSong = playlistManager.currentSong {
+                Task { await playCurrentSong(nextSong) }
+            }
+        case .normal:
+            if playlistManager.hasNext {
+                playlistManager.playNext()
+                if let nextSong = playlistManager.currentSong {
+                    Task { await playCurrentSong(nextSong) }
+                }
+            } else {
+                stop()
+            }
+        }
+    }
+    
+    public func playNext() {
+        playlistManager.playNext()
+        if let nextSong = playlistManager.currentSong {
+            Task { await playCurrentSong(nextSong) }
+        }
+    }
+    
+    public func playPrevious() {
+        if currentTime > 3 {
+            seek(to: 0)
+        } else {
+            playlistManager.playPrevious()
+            if let prevSong = playlistManager.currentSong {
+                Task { await playCurrentSong(prevSong) }
+            }
+        }
+    }
+    
+    public func togglePlayMode() {
+        playlistManager.togglePlayMode()
     }
     
     public func togglePlayPause() {

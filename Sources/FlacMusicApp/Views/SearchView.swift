@@ -44,6 +44,7 @@ public struct SearchView: View {
             LazyVStack(spacing: 0) {
                 ForEach(vm.songs) { song in
                     SongRowView(song: song)
+                        .environmentObject(vm)
                         .environmentObject(downloadManager)
                     
                     Divider()
@@ -67,6 +68,7 @@ public struct SearchView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.accentColor)
+                    .disabled(vm.isLoading)
                 }
             }
         }
@@ -157,6 +159,7 @@ struct SearchBarView: View {
 
 struct SongRowView: View {
     let song: Song
+    @EnvironmentObject private var vm: SearchViewModel
     @EnvironmentObject private var downloadManager: DownloadManager
     @State private var showingFormatPicker = false
     @State private var isLoadingURL = false
@@ -208,6 +211,10 @@ struct SongRowView: View {
             // Play button
             Button {
                 Task {
+                    let playlist = PlaylistManager.shared
+                    if !vm.songs.isEmpty {
+                        playlist.addToQueue(vm.songs)
+                    }
                     await PlayerManager.shared.play(song: song)
                 }
             } label: {

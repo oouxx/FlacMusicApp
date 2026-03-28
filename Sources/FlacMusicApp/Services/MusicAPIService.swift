@@ -14,7 +14,7 @@ public enum MusicPlatform: String, CaseIterable, Sendable {
     }
 }
 
-public final class MusicAPIService: @unchecked Sendable {
+public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     
     public static let shared = MusicAPIService()
     
@@ -23,11 +23,34 @@ public final class MusicAPIService: @unchecked Sendable {
     private let kuwoSongURLBase = "https://www.kuwo.cn/api/v1/www/music/playUrl"
     
     private let session: URLSession
+    @Published public var isCookieValid: Bool = false
+    @Published public var cookieNeedsRefresh: Bool = false
     private var cookieString: String = ""
     private var currentPlatform: MusicPlatform = .kuwo
     
     public init(session: URLSession = .shared) {
         self.session = session
+        loadStoredCookies()
+    }
+    
+    private func loadStoredCookies() {
+        if let stored = CookieStorage.shared.cookieString, !stored.isEmpty {
+            cookieString = stored
+            isCookieValid = !CookieStorage.shared.shouldRefresh
+            cookieNeedsRefresh = CookieStorage.shared.shouldRefresh
+        }
+    }
+    
+    private func handleAPIError(statusCode: Int) {
+        print("[MusicAPI] API error: status \(statusCode), triggering cookie refresh")
+        cookieString = ""
+        CookieStorage.shared.incrementRefreshCount()
+        if CookieStorage.shared.shouldAutoRefresh {
+            DispatchQueue.main.async { [weak self] in
+                self?.cookieNeedsRefresh = true
+                self?.isCookieValid = false
+            }
+        }
     }
     
     public func updateCookies(from webView: WKWebView) {
@@ -38,6 +61,11 @@ public final class MusicAPIService: @unchecked Sendable {
             self?.cookieString = cookieStr
             self?.signCache.removeAll()
             self?.timeCache.removeAll()
+            CookieStorage.shared.save(cookie: cookieStr)
+            DispatchQueue.main.async {
+                self?.isCookieValid = true
+                self?.cookieNeedsRefresh = false
+            }
         }
     }
     
@@ -45,6 +73,10 @@ public final class MusicAPIService: @unchecked Sendable {
         cookieString = ""
         signCache.removeAll()
         timeCache.removeAll()
+        CookieStorage.shared.clear()
+        DispatchQueue.main.async { [weak self] in
+            self?.isCookieValid = false
+        }
     }
     
     public func setPlatform(_ platform: MusicPlatform) {
@@ -170,6 +202,7 @@ public final class MusicAPIService: @unchecked Sendable {
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {
+            handleAPIError(statusCode: httpResponse.statusCode)
             throw MusicAPIError.serverError
         }
         
@@ -252,6 +285,9 @@ public final class MusicAPIService: @unchecked Sendable {
         
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
+            if let httpResponse = response as? HTTPURLResponse {
+                handleAPIError(statusCode: httpResponse.statusCode)
+            }
             throw MusicAPIError.serverError
         }
         
