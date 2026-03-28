@@ -15,6 +15,24 @@ let package = Package(
     ],
     dependencies: [],
     targets: [
+        .executableTarget(
+            name: "FlacMusicApp-macOS",
+            dependencies: ["FlacMusicApp"],
+            path: "Sources/FlacMusicApp",
+            sources: ["FlacMusicApp_macOS.swift"],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency")
+            ]
+        ),
+        .executableTarget(
+            name: "FlacMusicApp-iOS",
+            dependencies: ["FlacMusicApp"],
+            path: "Sources/FlacMusicApp",
+            sources: ["FlacMusicApp_iOS.swift"],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency")
+            ]
+        ),
         .target(
             name: "FlacMusicApp",
             dependencies: [],
