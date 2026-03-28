@@ -124,8 +124,11 @@ public struct PlayerView: View {
                 .background(.ultraThinMaterial)
                 
                 if player.duration > 0 {
-                    ProgressView(value: player.currentTime, total: player.duration)
-                        .tint(.accentColor)
+                    Slider(value: Binding(
+                        get: { player.currentTime },
+                        set: { player.seek(to: $0) }
+                    ), in: 0...player.duration)
+                    .tint(.accentColor)
                 }
             }
             .sheet(isPresented: $showLyrics) {
