@@ -1,0 +1,50 @@
+# Swift
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad
+*.xcworkspace/xcuserdata
+DerivedData/
+.swiftpm/config/dependencies.json
+
+# Xcode
+build/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace/contents.xcworkspacedata
+
+# Package Manager
+.build/
+Packages/
+
+# CocoaPods
+# Pods/
+
+# Archives (Makefile)
+.build/archives/
+.build/export/
+
+# macOS
+.DS_Store
+*.app
+*.dylib
+*.framework
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build outputs
+*.ipa
+*.xcarchive
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+*.temp

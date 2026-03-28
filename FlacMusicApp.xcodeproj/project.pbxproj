@@ -7,19 +7,58 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		A8F6D19A2F7750690084963F /* FlacMusicApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlacMusicApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8F6D1C22F7751290084963F /* FlacMusicApp-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FlacMusicApp-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8F6D1D12F7751560084963F /* FlacMusicApp-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FlacMusicApp-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A87C283A2F7775CE006BDDCE /* Exceptions for "Sources/FlacMusicApp" folder in "FlacMusicApp-macOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FlacMusicApp_iOS.swift,
+			);
+			target = A8F6D1C12F7751290084963F /* FlacMusicApp-macOS */;
+		};
+		A87C283B2F7775D2006BDDCE /* Exceptions for "Sources/FlacMusicApp" folder in "FlacMusicApp-iOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FlacMusicApp_macOS.swift,
+			);
+			target = A8F6D1D02F7751560084963F /* FlacMusicApp-iOS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A8F6D19C2F7750690084963F /* FlacMusicApp */ = {
+		A8F6D1C32F7751290084963F /* FlacMusicApp-macOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = FlacMusicApp;
+			path = "FlacMusicApp-macOS";
+			sourceTree = "<group>";
+		};
+		A8F6D1D22F7751560084963F /* FlacMusicApp-iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "FlacMusicApp-iOS";
+			sourceTree = "<group>";
+		};
+		A8F6D1E02F7752000084963F /* Sources/FlacMusicApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A87C283A2F7775CE006BDDCE /* Exceptions for "Sources/FlacMusicApp" folder in "FlacMusicApp-macOS" target */,
+				A87C283B2F7775D2006BDDCE /* Exceptions for "Sources/FlacMusicApp" folder in "FlacMusicApp-iOS" target */,
+			);
+			path = Sources/FlacMusicApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A8F6D1972F7750690084963F /* Frameworks */ = {
+		A8F6D1BF2F7751290084963F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8F6D1CE2F7751560084963F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,7 +71,9 @@
 		A8F6D1912F7750690084963F = {
 			isa = PBXGroup;
 			children = (
-				A8F6D19C2F7750690084963F /* FlacMusicApp */,
+				A8F6D1E02F7752000084963F /* Sources/FlacMusicApp */,
+				A8F6D1C32F7751290084963F /* FlacMusicApp-macOS */,
+				A8F6D1D22F7751560084963F /* FlacMusicApp-iOS */,
 				A8F6D19B2F7750690084963F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +81,8 @@
 		A8F6D19B2F7750690084963F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8F6D19A2F7750690084963F /* FlacMusicApp.app */,
+				A8F6D1C22F7751290084963F /* FlacMusicApp-macOS.app */,
+				A8F6D1D12F7751560084963F /* FlacMusicApp-iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,26 +90,50 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A8F6D1992F7750690084963F /* FlacMusicApp */ = {
+		A8F6D1C12F7751290084963F /* FlacMusicApp-macOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A8F6D1A52F77506A0084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp" */;
+			buildConfigurationList = A8F6D1CA2F77512A0084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp-macOS" */;
 			buildPhases = (
-				A8F6D1962F7750690084963F /* Sources */,
-				A8F6D1972F7750690084963F /* Frameworks */,
-				A8F6D1982F7750690084963F /* Resources */,
+				A8F6D1BE2F7751290084963F /* Sources */,
+				A8F6D1BF2F7751290084963F /* Frameworks */,
+				A8F6D1C02F7751290084963F /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A8F6D19C2F7750690084963F /* FlacMusicApp */,
+				A8F6D1C32F7751290084963F /* FlacMusicApp-macOS */,
+				A8F6D1E02F7752000084963F /* Sources/FlacMusicApp */,
 			);
-			name = FlacMusicApp;
+			name = "FlacMusicApp-macOS";
 			packageProductDependencies = (
 			);
-			productName = FlacMusicApp;
-			productReference = A8F6D19A2F7750690084963F /* FlacMusicApp.app */;
+			productName = "FlacMusicApp-macOS";
+			productReference = A8F6D1C22F7751290084963F /* FlacMusicApp-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A8F6D1D02F7751560084963F /* FlacMusicApp-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A8F6D1D92F7751560084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp-iOS" */;
+			buildPhases = (
+				A8F6D1CD2F7751560084963F /* Sources */,
+				A8F6D1CE2F7751560084963F /* Frameworks */,
+				A8F6D1CF2F7751560084963F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A8F6D1D22F7751560084963F /* FlacMusicApp-iOS */,
+				A8F6D1E02F7752000084963F /* Sources/FlacMusicApp */,
+			);
+			name = "FlacMusicApp-iOS";
+			packageProductDependencies = (
+			);
+			productName = "FlacMusicApp-iOS";
+			productReference = A8F6D1D12F7751560084963F /* FlacMusicApp-iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -80,7 +146,10 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
-					A8F6D1992F7750690084963F = {
+					A8F6D1C12F7751290084963F = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					A8F6D1D02F7751560084963F = {
 						CreatedOnToolsVersion = 26.4;
 					};
 				};
@@ -99,13 +168,21 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A8F6D1992F7750690084963F /* FlacMusicApp */,
+				A8F6D1C12F7751290084963F /* FlacMusicApp-macOS */,
+				A8F6D1D02F7751560084963F /* FlacMusicApp-iOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A8F6D1982F7750690084963F /* Resources */ = {
+		A8F6D1C02F7751290084963F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8F6D1CF2F7751560084963F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +192,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A8F6D1962F7750690084963F /* Sources */ = {
+		A8F6D1BE2F7751290084963F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8F6D1CD2F7751560084963F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -239,87 +323,154 @@
 			};
 			name = Release;
 		};
-		A8F6D1A62F77506A0084963F /* Debug */ = {
+		A8F6D1CB2F77512A0084963F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.wxx.FlacMusicApp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wxx.FlacMusicApp-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
 			name = Debug;
 		};
-		A8F6D1A72F77506A0084963F /* Release */ = {
+		A8F6D1CC2F77512A0084963F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wxx.FlacMusicApp-macOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A8F6D1DA2F7751560084963F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.wxx.FlacMusicApp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wxx.FlacMusicApp-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.4;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A8F6D1DB2F7751560084963F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wxx.FlacMusicApp-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -335,11 +486,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A8F6D1A52F77506A0084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp" */ = {
+		A8F6D1CA2F77512A0084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp-macOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A8F6D1A62F77506A0084963F /* Debug */,
-				A8F6D1A72F77506A0084963F /* Release */,
+				A8F6D1CB2F77512A0084963F /* Debug */,
+				A8F6D1CC2F77512A0084963F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A8F6D1D92F7751560084963F /* Build configuration list for PBXNativeTarget "FlacMusicApp-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A8F6D1DA2F7751560084963F /* Debug */,
+				A8F6D1DB2F7751560084963F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
