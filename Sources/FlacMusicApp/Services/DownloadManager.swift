@@ -30,7 +30,7 @@ public final class DownloadManager: ObservableObject {
         }
         if isDuplicate { return }
         
-        var task = DownloadTask(song: song, format: format)
+        let task = DownloadTask(song: song, format: format)
         tasks.append(task)
         let taskId = task.id
         

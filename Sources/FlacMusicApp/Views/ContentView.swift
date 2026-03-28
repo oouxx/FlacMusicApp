@@ -49,19 +49,43 @@ public struct ContentView: View {
     @ViewBuilder
     private var cookieFetcherView: some View {
         #if os(iOS)
-        CookieWebView { webView in
-            MusicAPIService.shared.updateCookies(from: webView)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                cookiesLoaded = true
+        VStack {
+            if !cookiesLoaded {
+                CookieWebView { webView in
+                    MusicAPIService.shared.updateCookies(from: webView)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        cookiesLoaded = true
+                    }
+                }
+                .frame(width: 300, height: 400)
             }
         }
-        .frame(width: 1, height: 1)
-        .opacity(0)
-        #else
-        Color.clear
-            .onAppear {
-                cookiesLoaded = true
+        #elseif os(macOS)
+        VStack(spacing: 16) {
+            if !cookiesLoaded {
+                Text("正在加载音乐服务...")
+                    .font(.headline)
+                
+                MacCookieWebView { webView in
+                    MusicAPIService.shared.updateCookies(from: webView)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        cookiesLoaded = true
+                    }
+                }
+                .frame(width: 600, height: 400)
+                .cornerRadius(8)
+                
+                Text("如果出现验证页面，请手动完成验证")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Button("跳过") {
+                    cookiesLoaded = true
+                }
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
         #endif
     }
     

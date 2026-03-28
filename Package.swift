@@ -19,6 +19,10 @@ let package = Package(
             name: "FlacMusicApp",
             dependencies: [],
             path: "Sources/FlacMusicApp",
+            exclude: [
+                "FlacMusicApp_macOS.swift",
+                "FlacMusicApp_iOS.swift"
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]

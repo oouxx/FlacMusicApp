@@ -1,0 +1,17 @@
+curl 'https://flac.music.hi.cn/ajax.php?act=search' \
+  -H 'accept: application/json, text/javascript, */*; q=0.01' \
+  -H 'accept-language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7' \
+  -H 'content-type: application/x-www-form-urlencoded; charset=UTF-8' \
+  -b 'sl-session=DOTBGAWWyGlGOzCiOU0MMw==; sl-challenge-server=cloud; sl_jwt_session=pslCIzZnx2n/njI5PihDrg==; sl_jwt_sign=' \
+  -H 'dnt: 1' \
+  -H 'origin: https://flac.music.hi.cn' \
+  -H 'priority: u=1, i' \
+  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36' \
+  -H 'x-requested-with: XMLHttpRequest' \
+  --data-raw 'platform=wyy&keyword=swim&page=1&size=30'

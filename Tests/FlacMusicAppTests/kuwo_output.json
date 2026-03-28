@@ -1,0 +1,656 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "list": [
+      {
+        "id": "553342231",
+        "name": "SWIM",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "159",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "31.94Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.07Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.43Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342231",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "e4bea669f12a6f11b112ac7f5f51d6a3"
+      },
+      {
+        "id": "550807801",
+        "name": "SWIM",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "ARIRANG (Explicit Ver.)",
+        "album_id": "87997837",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s84\/24\/1745665441.jpg",
+        "duration": "159",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "31.94Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.07Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.43Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/550807801",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "0dd558b4dab3aebaacade0a1691c4ada"
+      },
+      {
+        "id": "553342229",
+        "name": "SWIM",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "157",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "28.65Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.02Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.41Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342229",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "9ff02dbd1b9d179c4f5bc5585703854b"
+      },
+      {
+        "id": "530985617",
+        "name": "swim",
+        "artist": "\u82b1\u8b5c",
+        "artist_id": "4059488",
+        "album_name": "I SCREAM LIVE4 - Cover Live Album -",
+        "album_id": "81561392",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s5\/87\/1282526334.jpg",
+        "duration": "226",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "26.39Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "8.64Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "3.46Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/530985617",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "511d43eed7a6a637afa0a61f565446cd"
+      },
+      {
+        "id": "552486090",
+        "name": "Swim",
+        "artist": "Karaoke Pro",
+        "artist_id": "1359273",
+        "album_name": "SWIM (Karaoke)",
+        "album_id": "88362808",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s32\/17\/822375767.jpg",
+        "duration": "155",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "15.92Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "5.94Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.38Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/552486090",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "cd1476277344b32c8d1768922c6efe6f"
+      },
+      {
+        "id": "551575361",
+        "name": "SWIM",
+        "artist": "BTS(\u9632\u5f39\u5c11\u5e74\u56e2)",
+        "artist_id": "0",
+        "album_name": "",
+        "album_id": "0",
+        "pic_url": null,
+        "duration": "169",
+        "minfo": [
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.58Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/551575361",
+        "hasHQ": false,
+        "hasSQ": false,
+        "time": 1774669999,
+        "sign": "7c01f8761701898f2450b39d9eb9eb46"
+      },
+      {
+        "id": "553141104",
+        "name": "Swim",
+        "artist": "Cloud Atlas",
+        "artist_id": "7123661",
+        "album_name": "See Like",
+        "album_id": "88507656",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s80\/71\/834723330.jpg",
+        "duration": "249",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "21.24Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "9.53Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "3.81Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553141104",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "1a7b02c058a51cca018f25ad2459a210"
+      },
+      {
+        "id": "552842690",
+        "name": "SWIM",
+        "artist": "John Rod Dondoyano",
+        "artist_id": "13431164",
+        "album_name": "SWIM",
+        "album_id": "88431221",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s37\/50\/3040640329.jpg",
+        "duration": "171",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "9.63Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.54Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.62Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/552842690",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "24af1144373d7edc8700df8254d86478"
+      },
+      {
+        "id": "546412003",
+        "name": "Swim",
+        "artist": "Raynow",
+        "artist_id": "3814743",
+        "album_name": "Nova",
+        "album_id": "86883295",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s27\/32\/1988799591.jpg",
+        "duration": "360",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "36.32Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "13.77Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "5.51Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/546412003",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "aac3da58b166dfdec080d3d1b998fcc8"
+      },
+      {
+        "id": "551428930",
+        "name": "SWIM",
+        "artist": "Bruiser",
+        "artist_id": "0",
+        "album_name": "ANTI-GRAVITY",
+        "album_id": "88143301",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s7\/11\/2299809674.jpg",
+        "duration": "182",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "37.17Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.98Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.79Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/551428930",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "2147f5eebbe77d5e6c534d6e1b9a3d6f"
+      },
+      {
+        "id": "550957843",
+        "name": "Swim (Emotional vibe)",
+        "artist": "WIBROL",
+        "artist_id": "18995777",
+        "album_name": "Swim (Emotional vibe)",
+        "album_id": "88031273",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s25\/92\/3299709526.jpg",
+        "duration": "131",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "10.7Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "5.03Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.01Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/550957843",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "a9060b54fea1dd40851797c9b4fba81f"
+      },
+      {
+        "id": "552479859",
+        "name": "Swim (From \"BTS\")",
+        "artist": "ONEBASE",
+        "artist_id": "20117583",
+        "album_name": "Swim (From \"BTS\") (Dublado Em Portugu\u00eas)",
+        "album_id": "88361458",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s33\/1\/1113032324.jpg",
+        "duration": "158",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "33.46Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.06Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.42Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/552479859",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "45c5a32dfe7a08e1eda9bfe2a27688ef"
+      },
+      {
+        "id": "553342232",
+        "name": "SWIM with RM",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "163",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "32.23Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.23Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.49Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342232",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "2f8624827661051aa20899ebfe509e4a"
+      },
+      {
+        "id": "553342234",
+        "name": "SWIM with Jin",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "193",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "39.79Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "7.4Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.96Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342234",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "d1f678c9230ad0cb217466b6c0b79c52"
+      },
+      {
+        "id": "61360",
+        "name": "Swim",
+        "artist": "Madonna",
+        "artist_id": "3707",
+        "album_name": "Ray of Light",
+        "album_id": "65829",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s90\/23\/687628710.jpg",
+        "duration": "300",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "28.87Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "11.47Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "4.59Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/61360",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "537f1791939e6089797181be28f10a1d"
+      },
+      {
+        "id": "553342230",
+        "name": "SWIM with Jung Kook",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "158",
+        "minfo": [
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.05Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.42Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342230",
+        "hasHQ": true,
+        "hasSQ": false,
+        "time": 1774669999,
+        "sign": "e9ad54cb65c7797b315f98f68f528759"
+      },
+      {
+        "id": "383967506",
+        "name": "swim",
+        "artist": "MyGO!!!!!",
+        "artist_id": "10824560",
+        "album_name": "\u30d0\u30f3\u30c9\u30ea\uff01 \u30ab\u30d0\u30fc\u30b3\u30ec\u30af\u30b7\u30e7\u30f3 Extra Volume",
+        "album_id": "53951516",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s3s94\/53\/1631481814.jpg",
+        "duration": "209",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "44.38Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "8.0Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "3.2Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/383967506",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "d7aa12a0fd5aa1fe06a2bd718064f2d2"
+      },
+      {
+        "id": "552846847",
+        "name": "SWIM (cover: BTS)",
+        "artist": "\u97e9\u96e8\u5609&\u79e6\u6f88ShinCheol&\u666f\u884dFlowsik",
+        "artist_id": "3630290",
+        "album_name": "SWIM",
+        "album_id": "88432311",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s20\/26\/3655552418.jpg",
+        "duration": "159",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "18.82Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "6.09Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "2.44Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/552846847",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "486dade6ef5f92cb555f8760b2b723cb"
+      },
+      {
+        "id": "553342238",
+        "name": "SWIM with SUGA",
+        "artist": "BTS",
+        "artist_id": "125238",
+        "album_name": "KEEP SWIMMING",
+        "album_id": "88556448",
+        "pic_url": "https:\/\/img1.kuwo.cn\/star\/albumcover\/120\/s4s30\/96\/2527546216.jpg",
+        "duration": "219",
+        "minfo": [
+          {
+            "level": "ff",
+            "bitrate": "2000",
+            "format": "flac",
+            "size": "45.04Mb"
+          },
+          {
+            "level": "p",
+            "bitrate": "320",
+            "format": "mp3",
+            "size": "8.38Mb"
+          },
+          {
+            "level": "h",
+            "bitrate": "128",
+            "format": "mp3",
+            "size": "3.35Mb"
+          }
+        ],
+        "link": "https:\/\/www.kuwo.cn\/play_detail\/553342238",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774669999,
+        "sign": "bb1c67743cc0b80e361a7ad2672325b6"
+      }
+    ],
+    "total": "3081"
+  }
+}

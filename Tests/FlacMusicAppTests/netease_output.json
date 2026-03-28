@@ -1,0 +1,639 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "list": [
+      {
+        "id": 1332888004,
+        "name": "Swim",
+        "artist": "Chase Atlantic",
+        "artist_id": 1193211,
+        "album_name": "Chase Atlantic",
+        "album_id": 74856948,
+        "pic_url": "http:\/\/p1.music.126.net\/Sjndl-zlfRt1PFrpdQ0zjw==\/109951163783219362.jpg",
+        "duration": 228786,
+        "minfo": [
+          {
+            "bitrate": "884",
+            "size": "24.12MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8.73MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.49MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=1332888004",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "0ae372cc39f3c3cf19f837473e92711d"
+      },
+      {
+        "id": 3362789080,
+        "name": "Swim (From \"BTS\") (Dublado Em Portugu\u00eas)",
+        "artist": "ONEBASE",
+        "artist_id": 123592925,
+        "album_name": "Swim (From \"BTS\") (Dublado Em Portugu\u00eas)",
+        "album_id": 367701660,
+        "pic_url": "http:\/\/p1.music.126.net\/kRK0fEDZZIiIG_16mPBNrg==\/109951172937155057.jpg",
+        "duration": 158797,
+        "minfo": [
+          {
+            "bitrate": "1660",
+            "size": "31.43MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.06MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.42MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3362789080",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "c05f5258c7481495da91a00609402d30"
+      },
+      {
+        "id": 3363109750,
+        "name": "SWIM\uff08COVER:BTS\uff09",
+        "artist": "Ray_Shineeee*",
+        "artist_id": 48918563,
+        "album_name": "SWIM",
+        "album_id": 367789854,
+        "pic_url": "http:\/\/p1.music.126.net\/6XQGLx41VsEOonMrtNT3sg==\/109951172940765920.jpg",
+        "duration": 160597,
+        "minfo": [
+          {
+            "bitrate": "994",
+            "size": "19.03MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.13MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.45MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3363109750",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "55da578b4cbc310b1a00cb24dca3d863"
+      },
+      {
+        "id": 1823970074,
+        "name": "Swim (\u7eaf\u4eab\u7248)",
+        "artist": "\u7c73\u5361",
+        "artist_id": 31062880,
+        "album_name": "\u521b\u9020\u84252021 \u7b2c\u4e00\u671f\u4e0a (\u7eaf\u4eab\u7248)",
+        "album_id": 123710919,
+        "pic_url": "http:\/\/p1.music.126.net\/luEw34XSWfZV4ayw8qRjVw==\/109951165770065434.jpg",
+        "duration": 103594,
+        "minfo": [
+          {
+            "bitrate": "1760",
+            "size": "21.73MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "3.95MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "1.58MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=1823970074",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "a52c59e0da1ce96517b6e2f5d84a9ae3"
+      },
+      {
+        "id": 3361533902,
+        "name": "SWIM \uff08\u963f\u5361\u8d1d\u62c9\u7248\uff09",
+        "artist": "\u662f\u4f50\u4f50\u5440",
+        "artist_id": 35122398,
+        "album_name": "BTS\u9632\u5f39\u300aSWIM\uff08\u4e2d\u6587\u7248\uff09\u300b",
+        "album_id": 367276225,
+        "pic_url": "http:\/\/p1.music.126.net\/LfKDiCEKWgWMCQAh9AZNlA==\/109951172919308848.jpg",
+        "duration": 158795,
+        "minfo": [
+          {
+            "bitrate": "884",
+            "size": "16.73MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.06MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.42MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3361533902",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "b66d2e5a381336303cebfad2ea0e4c46"
+      },
+      {
+        "id": 571590234,
+        "name": "Swim",
+        "artist": "\u629b",
+        "artist_id": 12051100,
+        "album_name": "\u7231",
+        "album_id": 39524690,
+        "pic_url": "http:\/\/p1.music.126.net\/lQweU0RWiLKLbq1MQPrBwQ==\/109951163336104558.jpg",
+        "duration": 167941,
+        "minfo": [
+          {
+            "bitrate": "320",
+            "size": "6.41MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.56MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=571590234",
+        "hasHQ": true,
+        "hasSQ": false,
+        "time": 1774672178,
+        "sign": "f3be9eeaed73d67d71a408f2774bfe32"
+      },
+      {
+        "id": 2164259993,
+        "name": "swim (Cover)",
+        "artist": "MyGO!!!!!",
+        "artist_id": 54743836,
+        "album_name": "\u30d0\u30f3\u30c9\u30ea\uff01 \u30ab\u30d0\u30fc\u30b3\u30ec\u30af\u30b7\u30e7\u30f3 Extra Volume",
+        "album_id": 198675493,
+        "pic_url": "http:\/\/p1.music.126.net\/o6GngCu85HNylNb31hgKZA==\/109951170225354997.jpg",
+        "duration": 209546,
+        "minfo": [
+          {
+            "bitrate": "1784",
+            "size": "44.58MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.2MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2164259993",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "5d0ab246661351b32617d9b0efdb7cbb"
+      },
+      {
+        "id": 3362404204,
+        "name": "SWIM (Piano Cover)",
+        "artist": "Pianella Piano",
+        "artist_id": 37108872,
+        "album_name": "SWIM (Piano Cover)",
+        "album_id": 367549709,
+        "pic_url": "http:\/\/p1.music.126.net\/CX8t8BVUdmTRO1yNPClE2A==\/109951172933221886.jpg",
+        "duration": 155810,
+        "minfo": [
+          {
+            "bitrate": "1180",
+            "size": "21.92MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "5.95MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.38MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3362404204",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "eaf9816f6990b087caa58dbd8fc95b01"
+      },
+      {
+        "id": 511975505,
+        "name": "Swim",
+        "artist": "Chase Atlantic",
+        "artist_id": 1193211,
+        "album_name": "Chase Atlantic",
+        "album_id": 36412842,
+        "pic_url": "http:\/\/p1.music.126.net\/zrBhu4k588i151obvQ_OqQ==\/18858823439726985.jpg",
+        "duration": 228786,
+        "minfo": [
+          {
+            "bitrate": "884",
+            "size": "24.12MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8.73MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.49MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=511975505",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "50cc8469ca03a5f73ecd903032bde5b6"
+      },
+      {
+        "id": 2046215711,
+        "name": "swim",
+        "artist": "sea-no",
+        "artist_id": 30109384,
+        "album_name": "swim",
+        "album_id": 165317069,
+        "pic_url": "http:\/\/p1.music.126.net\/5FiVO7H-r1Gv0uTiA48QXg==\/109951168602636869.jpg",
+        "duration": 232219,
+        "minfo": [
+          {
+            "bitrate": "663",
+            "size": "18.35MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8.86MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.54MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2046215711",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "6cd99f999e6ecffec2dc7a576785284d"
+      },
+      {
+        "id": 3343505577,
+        "name": "Swim",
+        "artist": "The Fairchilds",
+        "artist_id": 31535078,
+        "album_name": "Swim",
+        "album_id": 359838179,
+        "pic_url": "http:\/\/p1.music.126.net\/F0LbA826AicoFyzvFK5rfQ==\/109951172650123114.jpg",
+        "duration": 272497,
+        "minfo": [
+          {
+            "bitrate": "1730",
+            "size": "56.22MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "10.4MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "4.16MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3343505577",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "a2158a3f93bbd604c9d8553d79dab1fb"
+      },
+      {
+        "id": 3336815126,
+        "name": "swim",
+        "artist": "\u82b1\u8b5c",
+        "artist_id": 32062601,
+        "album_name": "I SCREAM LIVE4 - Cover Live Album -",
+        "album_id": 357488672,
+        "pic_url": "http:\/\/p1.music.126.net\/dv0obDwY6YNSqVgaRmfaPg==\/109951172552238947.jpg",
+        "duration": 226479,
+        "minfo": [
+          {
+            "bitrate": "986",
+            "size": "26.62MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8.64MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.46MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3336815126",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "e2dcfe1b4b3a3084dc572780b3b729ad"
+      },
+      {
+        "id": 28385970,
+        "name": "Swim",
+        "artist": "Fickle Friends",
+        "artist_id": 869026,
+        "album_name": "Swim",
+        "album_id": 2781415,
+        "pic_url": "http:\/\/p1.music.126.net\/j0V0RorxfADLYWpL9NGfBQ==\/5769137511142643.jpg",
+        "duration": 195627,
+        "minfo": [
+          {
+            "bitrate": "991",
+            "size": "23.12MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "7.46MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.99MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=28385970",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "e706b32d4d619187241f32dca8e7aaf7"
+      },
+      {
+        "id": 2155975891,
+        "name": "\u6f2b\u957f\u7684\u5b63\u8282",
+        "artist": "\u8fde\u9ebbSwimming",
+        "artist_id": 12064019,
+        "album_name": "\u90bb\u5bb6\u5c0f\u4e08\u592b",
+        "album_id": 195875404,
+        "pic_url": "http:\/\/p1.music.126.net\/Dg4tY7L441GZfYqqvWvPUw==\/109951169590445432.jpg",
+        "duration": 145500,
+        "minfo": [
+          {
+            "bitrate": "928",
+            "size": "16.1MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "5.55MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.22MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2155975891",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "34ef2927fc93834aba63912492512761"
+      },
+      {
+        "id": 2155972625,
+        "name": "\u54e6\uff08That'it\uff09",
+        "artist": "\u8fde\u9ebbSwimming",
+        "artist_id": 12064019,
+        "album_name": "\u90bb\u5bb6\u5c0f\u4e08\u592b",
+        "album_id": 195875404,
+        "pic_url": "http:\/\/p1.music.126.net\/Dg4tY7L441GZfYqqvWvPUw==\/109951169590445432.jpg",
+        "duration": 128000,
+        "minfo": [
+          {
+            "bitrate": "1037",
+            "size": "15.82MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "4.88MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "1.95MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2155972625",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "2cf642525ae70d08da5bd5c533e654b3"
+      },
+      {
+        "id": 3363227716,
+        "name": "Swim\uff08feat.Yoonhee\uff09",
+        "artist": "Yoonhee Hwang",
+        "artist_id": 36514088,
+        "album_name": "Swim",
+        "album_id": 367826948,
+        "pic_url": "http:\/\/p1.music.126.net\/5606Xv-OCyZBrFQ4HSZO9w==\/109951172942454012.jpg",
+        "duration": 163071,
+        "minfo": [
+          {
+            "bitrate": "1098",
+            "size": "21.35MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.22MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.49MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=3363227716",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "f28f3866afe04f6d076b48c315dcafd7"
+      },
+      {
+        "id": 2100524458,
+        "name": "Swim",
+        "artist": "Rene\u00e9 Rapp",
+        "artist_id": 52918639,
+        "album_name": "Snow Angel (Deluxe)",
+        "album_id": 179242848,
+        "pic_url": "http:\/\/p1.music.126.net\/8UwMczAsxOkJIbvBFnt6dA==\/109951169060534680.jpg",
+        "duration": 210066,
+        "minfo": [
+          {
+            "bitrate": "830",
+            "size": "20.78MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "8.02MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.21MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2100524458",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "8a2edf6911bc2bdd116fdce9fc5007a5"
+      },
+      {
+        "id": 1865855360,
+        "name": "Swim",
+        "artist": "LOTI",
+        "artist_id": 48692223,
+        "album_name": "DAILY COLOR",
+        "album_id": 131170753,
+        "pic_url": "http:\/\/p1.music.126.net\/9A4Aq-uyntKt_MhUlLnDYw==\/109951166239163853.jpg",
+        "duration": 173296,
+        "minfo": [
+          {
+            "bitrate": "857",
+            "size": "17.7MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.61MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.64MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=1865855360",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "4b9e3aef954f93ae9d85b7938f070c8f"
+      },
+      {
+        "id": 2138032580,
+        "name": "swim",
+        "artist": "\u9ad8\u677e\u71c8",
+        "artist_id": 60780194,
+        "album_name": "swim",
+        "album_id": 189616559,
+        "pic_url": "http:\/\/p1.music.126.net\/7WYzz5dknahTKzME-zZM-Q==\/109951170988172506.jpg",
+        "duration": 207984,
+        "minfo": [
+          {
+            "bitrate": "320",
+            "size": "7.93MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "3.17MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2138032580",
+        "hasHQ": true,
+        "hasSQ": false,
+        "time": 1774672178,
+        "sign": "6009738ee265bb2c6f17d53cf59928f2"
+      },
+      {
+        "id": 2089879738,
+        "name": "SWIM (feat. Quavo)",
+        "artist": "Swxm",
+        "artist_id": 49545304,
+        "album_name": "SWIM (feat. Quavo)",
+        "album_id": 176557148,
+        "pic_url": "http:\/\/p1.music.126.net\/IYnk0GdTwIe2C4LSf7on7g==\/109951168981466403.jpg",
+        "duration": 173534,
+        "minfo": [
+          {
+            "bitrate": "761",
+            "size": "15.74MB",
+            "format": "flac"
+          },
+          {
+            "bitrate": "320",
+            "size": "6.62MB",
+            "format": "mp3"
+          },
+          {
+            "bitrate": "128",
+            "size": "2.65MB",
+            "format": "mp3"
+          }
+        ],
+        "link": "https:\/\/music.163.com\/#\/song?id=2089879738",
+        "hasHQ": true,
+        "hasSQ": true,
+        "time": 1774672178,
+        "sign": "a63682c71637f31a1776a601ee8fab87"
+      }
+    ],
+    "total": 330
+  }
+}
