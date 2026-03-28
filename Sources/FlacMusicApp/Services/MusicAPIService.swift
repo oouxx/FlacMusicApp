@@ -206,6 +206,13 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             throw MusicAPIError.serverError
         }
         
+        let firstByte = data.first
+        guard firstByte == 123 || firstByte == 91 else {
+            print("[MusicAPI] Invalid JSON response, triggering cookie refresh")
+            handleAPIError(statusCode: httpResponse.statusCode)
+            throw MusicAPIError.serverError
+        }
+        
         // Cache signs and times from search results
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let dataObj = json["data"] as? [String: Any],
@@ -288,6 +295,15 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             if let httpResponse = response as? HTTPURLResponse {
                 handleAPIError(statusCode: httpResponse.statusCode)
             }
+            throw MusicAPIError.serverError
+        }
+        
+        let firstByte = data.first
+        let isPlainURL = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("http") ?? false
+        let isJSON = firstByte == 123 || firstByte == 91
+        guard isPlainURL || isJSON else {
+            print("[PlayerManager] Invalid response format, triggering cookie refresh")
+            handleAPIError(statusCode: httpResponse.statusCode)
             throw MusicAPIError.serverError
         }
         
