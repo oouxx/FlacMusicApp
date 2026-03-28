@@ -1,7 +1,12 @@
 import Foundation
 import Combine
-import AppKit
 import UniformTypeIdentifiers
+
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 public final class DownloadManager: ObservableObject {
     
@@ -50,10 +55,11 @@ public final class DownloadManager: ObservableObject {
             
             let (tempURL, _) = try await downloadSession.download(from: url)
             
-            // Show save panel
+            // Show save panel (macOS only)
             let fileName = "\(song.artist) - \(song.name).\(format.rawValue)"
             
             let destURL: URL? = await MainActor.run { () -> URL? in
+    #if os(macOS)
                 let savePanel = NSSavePanel()
                 savePanel.nameFieldStringValue = sanitize(fileName)
                 savePanel.allowedContentTypes = [.audio]
@@ -61,6 +67,13 @@ public final class DownloadManager: ObservableObject {
                 
                 let response = savePanel.runModal()
                 return response == .OK ? savePanel.url : nil
+    #else
+                // On iOS, save to Documents folder for now
+                let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let sanitizedName = sanitize(fileName)
+                let url = documents.appendingPathComponent(sanitizedName)
+                return url
+    #endif
             }
             
             guard let finalURL = destURL else {
