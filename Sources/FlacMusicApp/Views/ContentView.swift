@@ -7,6 +7,7 @@ public struct ContentView: View {
     @StateObject private var downloadManager = DownloadManager.shared
     @State private var selectedTab: Tab = .search
     @State private var cookiesLoaded = false
+    @State private var showCookieReloader = false
     
     public init() {}
     
@@ -81,6 +82,15 @@ public struct ContentView: View {
                 
                 Button("跳过") {
                     cookiesLoaded = true
+                }
+                
+                Button("刷新Cookie") {
+                    showCookieReloader = true
+                }
+                .sheet(isPresented: $showCookieReloader) {
+                    CookieReloaderView(onComplete: {
+                        showCookieReloader = false
+                    })
                 }
             }
         }

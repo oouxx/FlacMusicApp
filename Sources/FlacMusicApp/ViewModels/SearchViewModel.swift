@@ -64,6 +64,12 @@ public final class SearchViewModel: ObservableObject {
             } catch {
                 guard !Task.isCancelled else { return }
                 errorMessage = error.localizedDescription
+                
+                // 如果是 Cookie 相关错误，清除缓存让用户重新验证
+                let errorStr = error.localizedDescription.lowercased()
+                if errorStr.contains("验证") || errorStr.contains("expired") || errorStr.contains("参数校验失败") || errorStr.contains("server error") {
+                    MusicAPIService.shared.clearCookies()
+                }
             }
             isLoading = false
         }

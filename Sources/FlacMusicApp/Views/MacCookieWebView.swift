@@ -59,4 +59,33 @@ struct MacCookieWebView: NSViewRepresentable {
         }
     }
 }
+
+struct CookieReloaderView: View {
+    let onComplete: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("重新获取Cookie")
+                .font(.headline)
+            
+            Text("请完成人机验证后点击完成")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            MacCookieWebView { webView in
+                MusicAPIService.shared.updateCookies(from: webView)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    onComplete()
+                }
+            }
+            .frame(width: 500, height: 400)
+            .cornerRadius(8)
+            
+            Button("完成") {
+                onComplete()
+            }
+        }
+        .padding()
+    }
+}
 #endif

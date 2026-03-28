@@ -36,7 +36,15 @@ public final class MusicAPIService: @unchecked Sendable {
             print("[Cookies] Got \(cookies.count) cookies")
             print("[Cookies] Cookie string: \(cookieStr.prefix(200))")
             self?.cookieString = cookieStr
+            self?.signCache.removeAll()
+            self?.timeCache.removeAll()
         }
+    }
+    
+    public func clearCookies() {
+        cookieString = ""
+        signCache.removeAll()
+        timeCache.removeAll()
     }
     
     public func setPlatform(_ platform: MusicPlatform) {

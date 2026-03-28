@@ -50,7 +50,6 @@ public struct SearchView: View {
                         .padding(.leading, 70)
                 }
                 
-                // Load more
                 if vm.hasMore {
                     Button {
                         Task { await vm.loadMore() }
@@ -58,10 +57,10 @@ public struct SearchView: View {
                         HStack {
                             if vm.isLoading {
                                 ProgressView()
-                                    .scaleEffect(0.8)
+                            } else {
+                                Text("下一页")
+                                    .font(.callout)
                             }
-                            Text("加载更多")
-                                .font(.callout)
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -72,7 +71,9 @@ public struct SearchView: View {
             }
         }
     }
-    
+}
+
+extension SearchView {
     private var emptyState: some View {
         VStack(spacing: 16) {
             if let error = vm.errorMessage {
