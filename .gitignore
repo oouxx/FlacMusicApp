@@ -9,6 +9,7 @@ DerivedData/
 
 # Xcode
 build/
+*.xcodeproj/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 *.xccheckout
