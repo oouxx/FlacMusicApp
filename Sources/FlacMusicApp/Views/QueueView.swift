@@ -26,54 +26,71 @@ public struct QueueView: View {
                     .foregroundColor(.secondary)
                 Spacer()
             } else {
-                List {
-                    ForEach(Array(playlist.queue.enumerated()), id: \.offset) { index, song in
-                        HStack {
-                            if index == playlist.currentIndex {
-                                Image(systemName: "speaker.wave.2.fill")
-                                    .foregroundColor(.accentColor)
-                                    .font(.caption)
-                            } else {
-                                Text("\(index + 1)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
-                            }
-                            
-                            VStack(alignment: .leading) {
-                                Text(song.name)
-                                    .font(.body)
-                                    .lineLimit(1)
-                                Text(song.artist)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
-                            }
-                            
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            playlist.play(at: index)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            playlist.removeFromQueue(at: index)
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(playlist.queue.enumerated()), id: \.offset) { index, song in
+                            queueRow(song: song, index: index)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        playlist.removeFromQueue(at: index)
+                                    } label: {
+                                        Label("删除", systemImage: "trash")
+                                    }
+                                }
                         }
                     }
                 }
-                .listStyle(.plain)
                 
-                if !playlist.queue.isEmpty {
-                    Divider()
-                    Button("清空队列") {
-                        playlist.clearQueue()
-                    }
-                    .foregroundColor(.red)
-                    .padding()
+                Divider()
+                
+                Button(role: .destructive) {
+                    playlist.clearQueue()
+                } label: {
+                    Label("清空队列", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.plain)
+                .foregroundColor(.red)
+                .padding()
             }
         }
+    }
+    
+    @ViewBuilder
+    private func queueRow(song: Song, index: Int) -> some View {
+        Button {
+            playlist.play(at: index)
+        } label: {
+            HStack(spacing: 12) {
+                if index == playlist.currentIndex {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .foregroundColor(.accentColor)
+                        .font(.caption)
+                        .frame(width: 20)
+                } else {
+                    Text("\(index + 1)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 20)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(song.name)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(song.artist)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

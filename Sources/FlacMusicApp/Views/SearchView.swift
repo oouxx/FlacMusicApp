@@ -213,7 +213,7 @@ struct SongRowView: View {
                 Task {
                     let playlist = PlaylistManager.shared
                     if !vm.songs.isEmpty {
-                        playlist.addToQueue(vm.songs)
+                        playlist.setSearchResults(vm.songs)
                     }
                     await PlayerManager.shared.play(song: song)
                 }

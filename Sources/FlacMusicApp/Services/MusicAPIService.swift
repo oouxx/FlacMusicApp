@@ -95,13 +95,18 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             return
         }
         
+        guard !isRefreshingCookie else {
+            print("[MusicAPI] Already refreshing, skip")
+            return
+        }
+        
         print("[MusicAPI] No valid cookies in pool, triggering refresh")
         CookieStorage.shared.incrementRefreshCount()
-        if CookieStorage.shared.shouldAutoRefresh || CookieStorage.shared.poolSize == 0 {
-            DispatchQueue.main.async { [weak self] in
-                self?.cookieNeedsRefresh = true
-                self?.isCookieValid = false
-            }
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.isRefreshingCookie = true
+            self?.cookieNeedsRefresh = true
+            self?.isCookieValid = false
         }
     }
     
@@ -141,6 +146,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             DispatchQueue.main.async {
                 self?.isCookieValid = true
                 self?.cookieNeedsRefresh = false
+                self?.isRefreshingCookie = false
             }
         }
     }
@@ -151,6 +157,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         CookieStorage.shared.clear()
         DispatchQueue.main.async { [weak self] in
             self?.isCookieValid = false
+            self?.isRefreshingCookie = false
         }
     }
     

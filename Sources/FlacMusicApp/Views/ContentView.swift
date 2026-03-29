@@ -73,11 +73,12 @@ public struct ContentView: View {
     private func cookieFetcherView(isInitialLoad: Bool) -> some View {
         SilentCookieWebView { webView in
             MusicAPIService.shared.updateCookies(from: webView)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
                 if isInitialLoad {
                     cookiesLoaded = true
                 } else {
                     silentRefreshTrigger = false
+                    MusicAPIService.shared.isRefreshingCookie = false
                 }
             }
         }

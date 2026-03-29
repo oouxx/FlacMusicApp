@@ -45,7 +45,7 @@ public final class PlayerManager: ObservableObject {
         await playCurrentSong(song)
     }
     
-    private func playCurrentSong(_ song: Song) async {
+    private func playCurrentSong(_ song: Song, retryCount: Int = 0) async {
         await MainActor.run {
             isLoading = true
             currentSong = song
@@ -92,6 +92,25 @@ public final class PlayerManager: ObservableObject {
             await MainActor.run {
                 isLoading = false
             }
+            
+            if retryCount < 3 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                await playCurrentSong(song, retryCount: retryCount + 1)
+            } else {
+                await skipToNextIfAvailable()
+            }
+        }
+    }
+    
+    private func skipToNextIfAvailable() async {
+        let currentIndex = playlistManager.currentIndex
+        if playlistManager.hasNext {
+            playlistManager.playNext()
+            if let nextSong = playlistManager.currentSong {
+                await playCurrentSong(nextSong)
+            }
+        } else {
+            stop()
         }
     }
     
