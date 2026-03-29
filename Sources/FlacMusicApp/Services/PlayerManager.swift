@@ -23,6 +23,23 @@ public final class PlayerManager: ObservableObject {
     
     private init() {
         setupAudioSession()
+        
+        MusicAPIService.shared.onCookieRefreshed = { [weak self] in
+            guard let self = self else { return }
+            Task {
+                await self.refreshQueueUrls()
+            }
+        }
+    }
+    
+    private func refreshQueueUrls() async {
+        for song in playlistManager.queue {
+            do {
+                _ = try await MusicAPIService.shared.getSongURL(songId: song.id, format: song.bestFormat)
+            } catch {
+                print("[PlayerManager] Failed to refresh URL for \(song.name): \(error)")
+            }
+        }
     }
     
     private func setupAudioSession() {
@@ -47,16 +64,20 @@ public final class PlayerManager: ObservableObject {
     }
     
     private func playCurrentSong(_ song: Song, retryCount: Int = 0) async {
+        let oldPlayer = player
+        let oldObserver = timeObserver
+        
         await MainActor.run {
             isLoading = true
             currentSong = song
-            if let observer = timeObserver {
-                player?.removeTimeObserver(observer)
-                timeObserver = nil
+            
+            if let observer = oldObserver, let oldPlayer = oldPlayer {
+                oldPlayer.removeTimeObserver(observer)
             }
+            timeObserver = nil
+            
             endObserver = nil
-            player?.pause()
-            player = nil
+            oldPlayer?.pause()
         }
         
         do {
@@ -216,12 +237,15 @@ public final class PlayerManager: ObservableObject {
     // MARK: - Private
     
     private func setupTimeObserver() {
+        guard let player = player else { return }
+        
         if let observer = timeObserver {
-            player?.removeTimeObserver(observer)
+            player.removeTimeObserver(observer)
+            timeObserver = nil
         }
         
         let interval = CMTime(seconds: 0.5, preferredTimescale: 600)
-        timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             self.currentTime = time.seconds.isNaN ? 0 : time.seconds
             

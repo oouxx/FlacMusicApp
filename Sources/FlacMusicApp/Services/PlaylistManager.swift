@@ -36,19 +36,20 @@ public final class PlaylistManager: ObservableObject {
     private var shuffleOrder: [Int] = []
     private var cancellables = Set<AnyCancellable>()
     
-    private init() {
-        $queue
-            .sink { [weak self] newQueue in
-                self?.updateShuffleOrder(newQueue)
-            }
-            .store(in: &cancellables)
-    }
+    private init() {}
     
-    private func updateShuffleOrder(_ newQueue: [Song]) {
-        queue = newQueue
+    private func syncShuffleOrder() {
         if playMode == .shuffle && !queue.isEmpty {
+            let currentSongId = currentSong?.id
             shuffleOrder = Array(0..<queue.count)
             shuffleOrder.shuffle()
+            if let id = currentSongId, let newIndex = queue.firstIndex(where: { $0.id == id }) {
+                if let shuffleIdx = shuffleOrder.firstIndex(of: newIndex) {
+                    shuffleOrder.swapAt(0, shuffleIdx)
+                }
+            }
+        } else {
+            shuffleOrder = []
         }
     }
     
@@ -82,19 +83,18 @@ public final class PlaylistManager: ObservableObject {
     public func setSearchResults(_ songs: [Song]) {
         queue = songs
         currentIndex = 0
-        if playMode == .shuffle && !queue.isEmpty {
-            shuffleOrder = Array(0..<queue.count)
-            shuffleOrder.shuffle()
-        }
+        syncShuffleOrder()
     }
     
     public func addToQueue(_ song: Song) {
-        if queue.contains(where: { $0.id == song.id }) {
+        if let existingIndex = queue.firstIndex(where: { $0.id == song.id }) {
+            currentIndex = existingIndex
             return
         }
         queue.append(song)
+        currentIndex = queue.count - 1
         if playMode == .shuffle {
-            shuffleOrder.append(queue.count - 1)
+            syncShuffleOrder()
         }
     }
     

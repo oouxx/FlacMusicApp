@@ -19,18 +19,20 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     public static let shared = MusicAPIService()
     
     private let hiCNBase = "https://flac.music.hi.cn"
-    private let kuwoSearchBase = "https://www.kuwo.cn/api/www/search/searchMusicBykeyWord"
     private let kuwoSongURLBase = "https://www.kuwo.cn/api/v1/www/music/playUrl"
     
     private let session: URLSession
     private var backgroundTimer: Timer?
+    private var heartbeatTimer: Timer?
     private let autoRefreshInterval: TimeInterval = 600
+    private let heartbeatInterval: TimeInterval = 60
     private let refreshTimeout: TimeInterval = 10.0
     private var refreshStartTime: Date? = nil
     
     @Published public var isCookieValid: Bool = false
     @Published public var cookieNeedsRefresh: Bool = false
     @Published public var isRefreshingCookie: Bool = false
+    public var onCookieRefreshed: (() -> Void)?
     
     private var currentPlatform: MusicPlatform = .kuwo
     
@@ -38,10 +40,12 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         self.session = session
         loadStoredCookies()
         startBackgroundCookieRefresh()
+        startHeartbeat()
     }
     
     deinit {
         backgroundTimer?.invalidate()
+        heartbeatTimer?.invalidate()
     }
     
     private func startBackgroundCookieRefresh() {
@@ -52,6 +56,56 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         
         let timeoutTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             self?.checkRefreshTimeout()
+        }
+    }
+    
+    private func startHeartbeat() {
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: heartbeatInterval, repeats: true) { [weak self] _ in
+            self?.validateCookie()
+        }
+    }
+    
+    private func validateCookie() {
+        guard let cookie = CookieStorage.shared.getNextValidCookie() else {
+            triggerCookieRefresh()
+            return
+        }
+        
+        Task {
+            do {
+                let url = URL(string: "\(hiCNBase)/ajax.php?act=search")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
+                request.setValue(cookie, forHTTPHeaderField: "Cookie")
+                request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
+                request.httpBody = "platform=kuwo&keyword=test&page=1&size=1".data(using: .utf8)
+                
+                let (_, response) = try await session.data(for: request)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 468 {
+                        print("[MusicAPI] Heartbeat: cookie invalid (468), refreshing")
+                        CookieStorage.shared.markCookieInvalid(cookie)
+                        await MainActor.run {
+                            self.triggerCookieRefresh()
+                        }
+                    } else if httpResponse.statusCode != 200 {
+                        print("[MusicAPI] Heartbeat: unexpected status \(httpResponse.statusCode)")
+                    }
+                }
+            } catch {
+                print("[MusicAPI] Heartbeat check failed: \(error)")
+            }
+        }
+    }
+    
+    private func triggerCookieRefresh() {
+        guard !isRefreshingCookie else { return }
+        refreshStartTime = Date()
+        DispatchQueue.main.async { [weak self] in
+            self?.cookieNeedsRefresh = true
         }
     }
     
@@ -114,8 +168,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         }
         
         print("[MusicAPI] No valid cookies in pool, triggering refresh")
-        CookieStorage.shared.incrementRefreshCount()
-        
+                
         DispatchQueue.main.async { [weak self] in
             self?.isRefreshingCookie = true
             self?.cookieNeedsRefresh = true
@@ -139,8 +192,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         }
         
         print("[MusicAPI] No valid cookies in pool, triggering refresh")
-        CookieStorage.shared.incrementRefreshCount()
-        if CookieStorage.shared.shouldAutoRefresh || CookieStorage.shared.poolSize == 0 {
+                if !CookieStorage.shared.hasValidCookie {
             DispatchQueue.main.async { [weak self] in
                 self?.isRefreshingCookie = true
                 self?.cookieNeedsRefresh = true
@@ -156,11 +208,12 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             print("[Cookies] Cookie string: \(cookieStr.prefix(200))")
             self?.signCache.removeAll()
             self?.timeCache.removeAll()
-            CookieStorage.shared.save(cookie: cookieStr)
+            CookieStorage.shared.save(cookieStr)
             DispatchQueue.main.async {
                 self?.isCookieValid = true
                 self?.cookieNeedsRefresh = false
                 self?.isRefreshingCookie = false
+                self?.onCookieRefreshed?()
             }
         }
     }
@@ -444,56 +497,6 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         }
         
         throw MusicAPIError.noDownloadURL
-    }
-    
-    private func fetchKuwoSearch(keyword: String, page: Int, pageSize: Int) async throws -> [Song] {
-        guard var components = URLComponents(string: kuwoSearchBase) else {
-            throw MusicAPIError.invalidURL
-        }
-        
-        components.queryItems = [
-            URLQueryItem(name: "key", value: keyword),
-            URLQueryItem(name: "pn", value: String(page)),
-            URLQueryItem(name: "rn", value: String(pageSize)),
-            URLQueryItem(name: "httpsStatus", value: "1"),
-            URLQueryItem(name: "reqId", value: UUID().uuidString.lowercased())
-        ]
-        
-        guard let url = components.url else { throw MusicAPIError.invalidURL }
-        
-        var request = URLRequest(url: url)
-        request.setValue("https://www.kuwo.cn", forHTTPHeaderField: "Referer")
-        request.setValue("https://www.kuwo.cn", forHTTPHeaderField: "Origin")
-        request.setValue("0", forHTTPHeaderField: "csrf")
-        
-        let (data, response) = try await session.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw MusicAPIError.serverError
-        }
-        
-        // Try to parse as Kuwo API response
-        if let decoded = try? JSONDecoder().decode(KuwoSearchResponse.self, from: data),
-           let songs = decoded.data?.list?.map({ $0.toSong }) {
-            if !songs.isEmpty {
-                return songs
-            }
-        }
-        
-        // Try to parse as output.json format
-        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let list = json["data"] as? [String: Any],
-           let songsList = list["list"] as? [[String: Any]] {
-            return songsList.compactMap { parseSongDict($0, platform: .kuwo) }
-        }
-        
-        // Try direct array format
-        if let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            return list.compactMap { parseSongDict($0, platform: .kuwo) }
-        }
-        
-        throw MusicAPIError.parseError
     }
     
     private func fetchKuwoSongURL(songId: String, format: AudioFormat) async throws -> String {
