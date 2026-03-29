@@ -19,6 +19,7 @@ public final class PlayerManager: ObservableObject {
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
     private var endObserver: NSObjectProtocol?
+    private var lyricsLoadTask: Task<Void, Never>?  // For cancelling previous lyric load tasks
     
     private init() {
         setupAudioSession()
@@ -192,7 +193,8 @@ public final class PlayerManager: ObservableObject {
     }
     
     private func loadLyrics(songId: String) {
-        Task {
+        lyricsLoadTask?.cancel()
+        lyricsLoadTask = Task {
             do {
                 let lyrics = try await MusicAPIService.shared.getLyrics(songId: songId)
                 await MainActor.run {

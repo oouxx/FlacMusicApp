@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Song Model
 
-public struct Song: Identifiable, Codable, Sendable {
+public struct Song: Identifiable, Codable, Sendable, Equatable {
     public let id: String
     public let name: String
     public let artist: String
@@ -20,6 +20,16 @@ public struct Song: Identifiable, Codable, Sendable {
         self.coverUrl = coverUrl
         self.duration = duration
         self.formats = formats
+    }
+    
+    public static func == (lhs: Song, rhs: Song) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.artist == rhs.artist &&
+        lhs.album == rhs.album &&
+        lhs.coverUrl == rhs.coverUrl &&
+        lhs.duration == rhs.duration &&
+        lhs.formats == rhs.formats
     }
     
     public var durationString: String {

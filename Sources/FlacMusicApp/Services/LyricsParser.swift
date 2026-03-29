@@ -11,51 +11,58 @@ public struct LyricLine: Identifiable, Equatable {
     }
 }
 
-public func parseLRC(_ lrc: String) -> [LyricLine] {
-    var lines: [LyricLine] = []
-    let pattern = #"\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)"#
+public final class LyricsParser {
+    public static let shared = LyricsParser()
     
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-        return lines
-    }
+    private init() {}
     
-    let lrcLines = lrc.components(separatedBy: .newlines)
-    
-    for line in lrcLines {
-        let range = NSRange(line.startIndex..., in: line)
-        if let match = regex.firstMatch(in: line, options: [], range: range) {
-            guard let minutesRange = Range(match.range(at: 1), in: line),
-                  let secondsRange = Range(match.range(at: 2), in: line),
-                  let millisecondsRange = Range(match.range(at: 3), in: line),
-                  let textRange = Range(match.range(at: 4), in: line) else {
-                continue
-            }
+    public func parseLRC(_ lrc: String) -> [LyricLine] {
+        // 支持多种格式: [mm:ss], [mm:ss.ms], [mm:ss.msms], [mm:ss.msmsms]
+        let pattern = #"\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\](.*)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return []
+        }
+        
+        let lines = lrc.components(separatedBy: .newlines)
+        var result: [LyricLine] = []
+        
+        for line in lines {
+            let range = NSRange(line.startIndex..<line.endIndex, in: line)
+            let matches = regex.matches(in: line, options: [], range: range)
             
-            let minutes = Double(line[minutesRange]) ?? 0
-            let seconds = Double(line[secondsRange]) ?? 0
-            let millisecondsStr = String(line[millisecondsRange])
-            let milliseconds = (Double(millisecondsStr) ?? 0) / (millisecondsStr.count == 2 ? 100 : 1000)
-            
-            let timestamp = minutes * 60 + seconds + milliseconds
-            let text = String(line[textRange]).trimmingCharacters(in: .whitespaces)
-            
-            if !text.isEmpty {
-                lines.append(LyricLine(timestamp: timestamp, text: text))
+            for match in matches {
+                if match.numberOfRanges >= 5 {
+                    let minRange = Range(match.range(at: 1), in: line)!
+                    let secRange = Range(match.range(at: 2), in: line)!
+                    let msRange = Range(match.range(at: 3), in: line)!
+                    let textRange = Range(match.range(at: 4), in: line)!
+                    
+                    let minutes = Int(line[minRange]) ?? 0
+                    let seconds = Int(line[secRange]) ?? 0
+                    let milliseconds = match.numberOfRanges >= 4 && !line[msRange].isEmpty ? Int(line[msRange]) ?? 0 : 0
+                    
+                    let timestamp = Double(minutes * 60 + seconds) + Double(milliseconds) / 1000.0
+                    let text = String(line[textRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    if !text.isEmpty {
+                        result.append(LyricLine(timestamp: timestamp, text: text))
+                    }
+                }
             }
         }
+        
+        return result.sorted { $0.timestamp < $1.timestamp }
     }
     
-    return lines.sorted { $0.timestamp < $1.timestamp }
-}
-
-public func findCurrentLineIndex(_ lines: [LyricLine], currentTime: Double) -> Int? {
-    guard !lines.isEmpty else { return nil }
-    
-    for i in (0..<lines.count).reversed() {
-        if currentTime >= lines[i].timestamp {
-            return i
+    public func findCurrentLineIndex(_ lines: [LyricLine], currentTime: Double) -> Int? {
+        guard !lines.isEmpty else { return nil }
+        
+        for i in (0..<lines.count).reversed() {
+            if currentTime >= lines[i].timestamp {
+                return i
+            }
         }
+        
+        return 0  // 返回第一行而不是 nil
     }
-    
-    return nil
 }

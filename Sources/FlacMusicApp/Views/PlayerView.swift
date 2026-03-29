@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 public struct PlayerView: View {
     @ObservedObject var player = PlayerManager.shared
@@ -153,13 +154,9 @@ public struct LyricsView: View {
     @ObservedObject var player: PlayerManager
     @Environment(\.dismiss) var dismiss
     
-    private var parsedLyrics: [LyricLine] {
-        parseLRC(lyrics)
-    }
-    
-    private var currentLineIndex: Int? {
-        findCurrentLineIndex(parsedLyrics, currentTime: player.currentTime)
-    }
+    @State private var parsedLyrics: [LyricLine] = []
+    @State private var currentLineIndex: Int? = nil
+    @State private var lastScrolledIndex: Int? = nil
     
     public init(lyrics: String, songName: String, artist: String, player: PlayerManager) {
         self.lyrics = lyrics
@@ -184,13 +181,13 @@ public struct LyricsView: View {
                 }
                 .padding(.top, 40)
                 
-                if lyrics.isEmpty {
+                if lyrics.isEmpty || parsedLyrics.isEmpty {
                     Spacer()
                     Text("暂无歌词")
                         .foregroundColor(.secondary)
                         .font(.title2)
                     Spacer()
-                } else if !parsedLyrics.isEmpty {
+                } else {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(spacing: 16) {
@@ -207,20 +204,13 @@ public struct LyricsView: View {
                             .padding(.horizontal, 24)
                         }
                         .onChange(of: currentLineIndex) { _, newIndex in
-                            if let index = newIndex {
+                            if let index = newIndex, index != lastScrolledIndex, index >= 0 && index < parsedLyrics.count {
+                                lastScrolledIndex = index
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     proxy.scrollTo(index, anchor: .center)
                                 }
                             }
                         }
-                    }
-                } else {
-                    ScrollView {
-                        Text(lyrics)
-                            .font(.body)
-                            .foregroundColor(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .padding()
                     }
                 }
                 
@@ -252,6 +242,12 @@ public struct LyricsView: View {
                 .foregroundColor(.white.opacity(0.7))
                 .padding(.bottom, 32)
             }
+        }
+        .onAppear {
+            parsedLyrics = LyricsParser.shared.parseLRC(lyrics)
+        }
+        .onChange(of: player.currentTime) { _, _ in
+            currentLineIndex = LyricsParser.shared.findCurrentLineIndex(parsedLyrics, currentTime: player.currentTime)
         }
     }
     

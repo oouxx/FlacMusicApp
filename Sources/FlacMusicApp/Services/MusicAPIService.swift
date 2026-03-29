@@ -25,13 +25,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     private let session: URLSession
     private var backgroundTimer: Timer?
     private let autoRefreshInterval: TimeInterval = 600
+    private let refreshTimeout: TimeInterval = 10.0
+    private var refreshStartTime: Date? = nil
     
     @Published public var isCookieValid: Bool = false
     @Published public var cookieNeedsRefresh: Bool = false
     @Published public var isRefreshingCookie: Bool = false
     
     private var currentPlatform: MusicPlatform = .kuwo
-    private var poolCookieIndex: Int = 0
     
     public init(session: URLSession = .shared) {
         self.session = session
@@ -48,13 +49,30 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         backgroundTimer = Timer.scheduledTimer(withTimeInterval: autoRefreshInterval, repeats: true) { [weak self] _ in
             self?.triggerBackgroundCookieRefresh()
         }
+        
+        let timeoutTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.checkRefreshTimeout()
+        }
     }
     
     private func triggerBackgroundCookieRefresh() {
         guard !isRefreshingCookie else { return }
         print("[MusicAPI] Background cookie refresh triggered")
+        refreshStartTime = Date()
         DispatchQueue.main.async { [weak self] in
             self?.cookieNeedsRefresh = true
+        }
+    }
+    
+    private func checkRefreshTimeout() {
+        guard let startTime = refreshStartTime, isRefreshingCookie else { return }
+        if Date().timeIntervalSince(startTime) > refreshTimeout {
+            print("[MusicAPI] Cookie refresh timeout, resetting state")
+            refreshStartTime = nil
+            isRefreshingCookie = false
+            if !CookieStorage.shared.hasValidCookie {
+                cookieNeedsRefresh = true
+            }
         }
     }
     
@@ -69,15 +87,10 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     }
     
     private func getCurrentCookie() -> String? {
+        if isRefreshingCookie {
+            return nil
+        }
         return CookieStorage.shared.getNextValidCookie()
-    }
-    
-    private func tryNextPoolCookie() -> String? {
-        let allCookies = CookieStorage.shared.getAllPoolCookies()
-        guard !allCookies.isEmpty else { return nil }
-        
-        poolCookieIndex = (poolCookieIndex + 1) % allCookies.count
-        return allCookies[poolCookieIndex]
     }
     
     private func handleAPIError(statusCode: Int, currentCookie: String?) {
@@ -129,6 +142,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         CookieStorage.shared.incrementRefreshCount()
         if CookieStorage.shared.shouldAutoRefresh || CookieStorage.shared.poolSize == 0 {
             DispatchQueue.main.async { [weak self] in
+                self?.isRefreshingCookie = true
                 self?.cookieNeedsRefresh = true
                 self?.isCookieValid = false
             }

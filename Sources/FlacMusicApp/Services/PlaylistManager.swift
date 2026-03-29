@@ -36,7 +36,21 @@ public final class PlaylistManager: ObservableObject {
     private var shuffleOrder: [Int] = []
     private var cancellables = Set<AnyCancellable>()
     
-    private init() {}
+    private init() {
+        $queue
+            .sink { [weak self] newQueue in
+                self?.updateShuffleOrder(newQueue)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func updateShuffleOrder(_ newQueue: [Song]) {
+        queue = newQueue
+        if playMode == .shuffle && !queue.isEmpty {
+            shuffleOrder = Array(0..<queue.count)
+            shuffleOrder.shuffle()
+        }
+    }
     
     public var currentSong: Song? {
         guard currentIndex >= 0 && currentIndex < queue.count else { return nil }
@@ -45,7 +59,9 @@ public final class PlaylistManager: ObservableObject {
     
     public var hasNext: Bool {
         switch playMode {
-        case .loopOne, .loopAll, .shuffle:
+        case .loopOne:
+            return false
+        case .loopAll, .shuffle:
             return !queue.isEmpty
         case .normal:
             return currentIndex < queue.count - 1
@@ -54,7 +70,9 @@ public final class PlaylistManager: ObservableObject {
     
     public var hasPrevious: Bool {
         switch playMode {
-        case .loopOne, .loopAll, .shuffle:
+        case .loopOne:
+            return false
+        case .loopAll, .shuffle:
             return !queue.isEmpty
         case .normal:
             return currentIndex > 0
@@ -124,15 +142,25 @@ public final class PlaylistManager: ObservableObject {
         queue.removeAll()
         currentIndex = 0
         shuffleOrder.removeAll()
+        PlayerManager.shared.stop()
     }
     
     public func removeFromQueue(at index: Int) {
         guard index >= 0 && index < queue.count else { return }
         
+        let wasPlaying = (index == currentIndex)
         queue.remove(at: index)
         
-        if currentIndex >= index {
-            currentIndex = max(0, currentIndex - 1)
+        if wasPlaying {
+            // 删除当前播放歌曲，停止播放或播放下一首
+            if !queue.isEmpty {
+                currentIndex = min(currentIndex, queue.count - 1)
+            } else {
+                currentIndex = 0
+                PlayerManager.shared.stop()
+            }
+        } else if currentIndex > index {
+            currentIndex -= 1
         }
         
         if playMode == .shuffle {

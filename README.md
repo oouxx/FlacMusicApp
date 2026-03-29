@@ -6,9 +6,11 @@ flac.music.hi.cn 的 Swift 原生复刻版，支持 macOS 和 iOS。
 
 - 🔍 搜索歌曲（支持酷我、网易云双平台）
 - 🎵 在线播放 FLAC 无损音乐
-- 📄 歌词显示
+- 📄 歌词显示（LRC 格式，实时滚动）
 - ⬇️ 下载管理，支持进度展示
 - 📱 原生 SwiftUI，macOS + iOS 共用代码
+- 🎧 播放队列（顺序/循环/随机播放）
+- 🔄 Cookie 池自动刷新（后台每 10 分钟）
 
 ## 界面预览
 
@@ -28,17 +30,20 @@ FlacMusicApp/
 │   │   └── Song.swift              # 数据模型
 │   ├── Services/
 │   │   ├── MusicAPIService.swift   # 音乐 API 请求层
-│   │   ├── DownloadManager.swift   # 下载管理
-│   │   └── PlayerManager.swift     # 音频播放
+│   │   ├── CookieStorage.swift     # Cookie 池 (5 个,10 分钟过期)
+│   │   ├── DownloadManager.wav     # 下载管理
+│   │   ├── PlayerManager.swift     # 音频播放
+│   │   └── LyricsParser.swift      # LRC 歌词解析
 │   ├── ViewModels/
 │   │   └── SearchViewModel.swift   # 搜索逻辑
 │   ├── Views/
 │   │   ├── ContentView.swift        # 主入口
 │   │   ├── SearchView.swift        # 搜索页
-│   │   ├── DownloadsView.swift      # 下载页
-│   │   └── PlayerView.swift       # 播放栏 + 歌词
-│   ├── FlacMusicApp_macOS.swift   # macOS @main
-│   └── FlacMusicApp_iOS.swift     # iOS @main
+│   │   ├── DownloadsView.wav        # 下载页
+│   │   ├── PlayerView.wav         # 播放栏 + 歌词
+│   │   └── QueueView.wav        # 播放队列
+│   ├── FlacMusicApp_macOS.wav   # macOS @main
+│   └── FlacMusicApp_iOS.wav     # iOS @main
 ├── FlacMusicApp-macOS/            # macOS Target
 └── FlacMusicApp-iOS/             # iOS Target
 ```
@@ -61,10 +66,13 @@ FlacMusicApp/
 ### 常见问题
 
 **Q: 搜索/播放失败怎么办？**
-A: 点击"刷新Cookie"按钮重新验证
+A: Cookie 会自动刷新（后台每 10 分钟）。也可手动点击"刷新Cookie"按钮重新验证
 
 **Q: 如何下载高品质音乐？**
 A: 搜索结果中点击下载按钮，支持 FLAC/MP3 格式
+
+**Q: 播放列表如何使用？**
+A: 点击播放列表按钮打开队列。支持顺序、循环、随机播放模式
 
 ## 构建命令
 
@@ -77,14 +85,22 @@ make build-ios-sim
 
 # 同时构建
 make build-all
+
+# 导出
+make export-macos         # 导出 .app (无签名)
+make export-ios           # 导出 .ipa (无签名)
+
+# 发布 GitHub Release
+make release VERSION=1.0.0  # 自动打包 + changelog
 ```
 
 ## GitHub Actions
 
 推送代码到 main 分支自动触发构建：
 
-- macOS arm64 + x86_64
+- macOS (arm64 + x86_64)
 - iOS 模拟器
+- 自动导出并上传构建产物
 
 ## 系统要求
 
@@ -98,3 +114,4 @@ make build-all
 - AVFoundation 音频播放
 - URLSession 网络请求
 - WKWebView Cookie 验证
+- MediaPlayer 框架 (控制中心 + Lock Screen)
