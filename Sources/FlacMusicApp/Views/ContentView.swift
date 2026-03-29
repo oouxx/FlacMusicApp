@@ -10,7 +10,7 @@ public struct ContentView: View {
     @State private var selectedTab: Tab = .search
     @State private var cookiesLoaded = false
     @State private var showCookieReloader = false
-    @State private var cancellables = Set<AnyCancellable>()
+    @State private var silentRefreshTrigger = false
     
     public init() {}
     
@@ -41,43 +41,42 @@ public struct ContentView: View {
                 PlayerView()
             }
             
-            if !cookiesLoaded || apiService.cookieNeedsRefresh {
-                cookieFetcherView
+            if !cookiesLoaded {
+                cookieFetcherView(isInitialLoad: true)
+            }
+            
+            if silentRefreshTrigger {
+                cookieFetcherView(isInitialLoad: false)
             }
         }
         .onChange(of: apiService.cookieNeedsRefresh) { _, newValue in
             if newValue && cookiesLoaded {
-                #if os(macOS)
-                showCookieReloader = true
-                #else
-                Task {
-                    await searchVM.search(query: searchVM.query, reset: true)
-                }
-                #endif
+                silentRefreshTrigger = true
             }
         }
-        #if os(macOS)
-        .sheet(isPresented: $showCookieReloader) {
-            CookieReloaderView(onComplete: {
-                showCookieReloader = false
+        .onChange(of: apiService.isCookieValid) { _, newValue in
+            if newValue && silentRefreshTrigger {
+                silentRefreshTrigger = false
                 if !searchVM.query.isEmpty {
                     Task {
                         await searchVM.search(query: searchVM.query, reset: true)
                     }
                 }
-            })
+            }
         }
-        #endif
         #if os(macOS)
         .frame(minWidth: 800, minHeight: 560)
         #endif
     }
     
     @ViewBuilder
-    private var cookieFetcherView: some View {
+    private func cookieFetcherView(isInitialLoad: Bool) -> some View {
         #if os(iOS)
         VStack {
-            if !cookiesLoaded {
+            if isInitialLoad {
+                Text("正在加载音乐服务...")
+                    .font(.headline)
+                
                 CookieWebView { webView in
                     MusicAPIService.shared.updateCookies(from: webView)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
@@ -85,11 +84,17 @@ public struct ContentView: View {
                     }
                 }
                 .frame(width: 300, height: 400)
+            } else {
+                SilentCookieWebView { webView in
+                    MusicAPIService.shared.updateCookies(from: webView)
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground).opacity(0.9))
         #elseif os(macOS)
         VStack(spacing: 16) {
-            if !cookiesLoaded {
+            if isInitialLoad {
                 Text("正在加载音乐服务...")
                     .font(.headline)
                 
@@ -109,19 +114,17 @@ public struct ContentView: View {
                 Button("跳过") {
                     cookiesLoaded = true
                 }
+            } else {
+                Text("正在刷新...")
+                    .font(.headline)
                 
-                Button("刷新Cookie") {
-                    showCookieReloader = true
-                }
-                .sheet(isPresented: $showCookieReloader) {
-                    CookieReloaderView(onComplete: {
-                        showCookieReloader = false
-                    })
+                SilentCookieWebView { webView in
+                    MusicAPIService.shared.updateCookies(from: webView)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.9))
         #endif
     }
     
