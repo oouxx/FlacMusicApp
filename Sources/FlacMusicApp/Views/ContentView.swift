@@ -71,61 +71,14 @@ public struct ContentView: View {
     
     @ViewBuilder
     private func cookieFetcherView(isInitialLoad: Bool) -> some View {
-        #if os(iOS)
-        VStack {
-            if isInitialLoad {
-                Text("正在加载音乐服务...")
-                    .font(.headline)
-                
-                CookieWebView { webView in
-                    MusicAPIService.shared.updateCookies(from: webView)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                        cookiesLoaded = true
-                    }
-                }
-                .frame(width: 300, height: 400)
-            } else {
-                SilentCookieWebView { webView in
-                    MusicAPIService.shared.updateCookies(from: webView)
-                }
+        SilentCookieWebView { webView in
+            MusicAPIService.shared.updateCookies(from: webView)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                cookiesLoaded = true
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground).opacity(0.9))
-        #elseif os(macOS)
-        VStack(spacing: 16) {
-            if isInitialLoad {
-                Text("正在加载音乐服务...")
-                    .font(.headline)
-                
-                MacCookieWebView { webView in
-                    MusicAPIService.shared.updateCookies(from: webView)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                        cookiesLoaded = true
-                    }
-                }
-                .frame(width: 600, height: 400)
-                .cornerRadius(8)
-                
-                Text("如果出现验证页面，请手动完成验证")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Button("跳过") {
-                    cookiesLoaded = true
-                }
-            } else {
-                Text("正在刷新...")
-                    .font(.headline)
-                
-                SilentCookieWebView { webView in
-                    MusicAPIService.shared.updateCookies(from: webView)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.9))
-        #endif
+        .background(Color.black.opacity(0.3))
     }
     
     enum Tab {
