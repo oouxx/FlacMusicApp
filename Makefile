@@ -31,6 +31,8 @@ help:
 	@echo "  make archive-ios        打包 iOS .xcarchive"
 	@echo "  make export-macos       导出 macOS .app"
 	@echo "  make export-ios         导出 iOS .ipa"
+	@echo "  make release            发布 GitHub Release (需要 gh CLI)"
+	@echo "  make release-dry-run    预览 release 内容"
 	@echo "  make spm-resolve        解析 Swift Package 依赖"
 	@echo "  make spm-build          SPM 编译（macOS）"
 	@echo "  make clean              清理构建缓存"
@@ -197,6 +199,96 @@ export-ios: archive-ios
 		else \
 			echo "❌ 未找到 .app"; exit 1; \
 		fi
+
+# ── Release ────────────────────────────────────────────────────
+VERSION ?= 1.0.0
+
+.PHONY: release
+release: export-macos export-ios
+	@echo "📦 计算文件哈希..."
+	@MACOS_APP=$(EXPORT_DIR)/macos/FlacMusicApp-macOS.app && \
+	IOS_IPA=$(EXPORT_DIR)/ios/FlacMusicApp.ipa && \
+	MACOS_HASH=$$(shasum -a 256 "$$MACOS_APP" | cut -d' ' -f1) && \
+	IOS_HASH=$$(shasum -a 256 "$$IOS_IPA" | cut -d' ' -f1) && \
+	echo "macOS .app SHA256: $$MACOS_HASH" && \
+	echo "iOS .ipa SHA256: $$IOS_HASH" && \
+	echo "" && \
+	echo "📝 生成 Changelog..." && \
+	LAST_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || echo "") && \
+	if [ -n "$$LAST_TAG" ]; then \
+		RANGE="$$LAST_TAG..HEAD"; \
+	else \
+		RANGE="-30"; \
+	fi && \
+	FEATS=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -E "^\\- feat[:(]" || true) && \
+	FIXES=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -E "^\\- fix[:(]" || true) && \
+	OTHER=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -vE "^\\- (feat|fix|chore|docs)[:(]" || true) && \
+	{ \
+		echo "## Downloads"; \
+		echo ""; \
+		echo "- **macOS**: FlacMusicApp-macOS.app (SHA256: \`$$MACOS_HASH\`)"; \
+		echo "- **iOS**: FlacMusicApp.ipa (SHA256: \`$$IOS_HASH\`)"; \
+		echo ""; \
+		echo "## Changelog"; \
+		echo ""; \
+		if [ -n "$$FEATS" ]; then \
+			echo "### ✨ New Features"; \
+			echo "$$FEATS" | sed 's/^feat: /- /'; \
+			echo ""; \
+		fi; \
+		if [ -n "$$FIXES" ]; then \
+			echo "### 🐛 Bug Fixes"; \
+			echo "$$FIXES" | sed 's/^fix: /- /'; \
+			echo ""; \
+		fi; \
+		if [ -n "$$OTHER" ]; then \
+			echo "### Other Changes"; \
+			echo "$$OTHER"; \
+		fi; \
+	} > /tmp/changelog.md && \
+	cat /tmp/changelog.md && \
+	echo "" && \
+	echo "🚀 创建 GitHub Release v$(VERSION)..." && \
+	gh release create v$(VERSION) \
+		"$$MACOS_APP" \
+		"$$IOS_IPA" \
+		--title "v$(VERSION)" \
+		--notes-file /tmp/changelog.md || \
+	(echo "❌ Release 创建失败,请确认 gh CLI 已登录" && exit 1)
+	@echo "✅ Release v$(VERSION) 已发布"
+
+.PHONY: release-dry-run
+release-dry-run: export-macos export-ios
+	@echo "📦 文件哈希 (预览):"
+	@echo "macOS: $$(shasum -a 256 $(EXPORT_DIR)/macos/FlacMusicApp-macOS.app | cut -d' ' -f1)"
+	@echo "iOS:   $$(shasum -a 256 $(EXPORT_DIR)/ios/FlacMusicApp.ipa | cut -d' ' -f1)"
+	@echo ""
+	@echo "📝 Changelog (预览):"
+	@LAST_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || echo "") && \
+	if [ -n "$$LAST_TAG" ]; then \
+		RANGE="$$LAST_TAG..HEAD"; \
+	else \
+		RANGE="-30"; \
+	fi && \
+	FEATS=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -E "^\\- feat[:(]" || true) && \
+	FIXES=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -E "^\\- fix[:(]" || true) && \
+	OTHER=$$(git log $$RANGE --pretty=format:"- %s" --no-merges | grep -vE "^\\- (feat|fix|chore|docs)[:(]" || true) && \
+	if [ -n "$$FEATS" ]; then \
+		echo "### ✨ New Features"; \
+		echo "$$FEATS" | sed 's/^feat: /- /'; \
+		echo ""; \
+	fi; \
+	if [ -n "$$FIXES" ]; then \
+		echo "### 🐛 Bug Fixes"; \
+		echo "$$FIXES" | sed 's/^fix: /- /'; \
+		echo ""; \
+	fi; \
+	if [ -n "$$OTHER" ]; then \
+		echo "### Other Changes"; \
+		echo "$$OTHER"; \
+	fi
+	@echo ""
+	@echo "ℹ️  实际发布请运行: make release VERSION=x.x.x"
 
 # ── 清理 ─────────────────────────────────────────────────────
 .PHONY: clean

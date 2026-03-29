@@ -10,7 +10,7 @@ public struct PooledCookie: Codable, Sendable {
     }
     
     public var isExpired: Bool {
-        let expirationInterval: TimeInterval = 3600
+        let expirationInterval: TimeInterval = 600
         return Date().timeIntervalSince(timestamp) > expirationInterval
     }
 }
@@ -21,8 +21,8 @@ public final class CookieStorage: @unchecked Sendable {
     private let userDefaults = UserDefaults.standard
     private let poolKey = "flacmusic_cookie_pool"
     private let refreshCountKey = "flacmusic_refresh_count"
-    private let poolCapacity = 3
-    private let expirationInterval: TimeInterval = 3600
+    private let poolCapacity = 5
+    private let expirationInterval: TimeInterval = 600
     
     private var cookiePool: [PooledCookie] = []
     private let queue = DispatchQueue(label: "com.flacmusic.cookiemanager", attributes: .concurrent)

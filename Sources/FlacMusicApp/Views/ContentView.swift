@@ -55,7 +55,7 @@ public struct ContentView: View {
             }
         }
         .onChange(of: apiService.isCookieValid) { _, newValue in
-            if newValue && silentRefreshTrigger {
+            if newValue {
                 silentRefreshTrigger = false
                 if !searchVM.query.isEmpty {
                     Task {
@@ -74,7 +74,11 @@ public struct ContentView: View {
         SilentCookieWebView { webView in
             MusicAPIService.shared.updateCookies(from: webView)
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                cookiesLoaded = true
+                if isInitialLoad {
+                    cookiesLoaded = true
+                } else {
+                    silentRefreshTrigger = false
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
