@@ -225,12 +225,16 @@ public final class PlayerManager: ObservableObject {
         #if os(iOS)
         if let coverUrl = song.coverUrl, let url = URL(string: coverUrl) {
             Task {
-                if let data = try? Data(contentsOf: url),
-                   let image = UIImage(data: data) {
-                    await MainActor.run {
-                        info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-                        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        await MainActor.run {
+                            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+                        }
                     }
+                } catch {
+                    print("[PlayerManager] Failed to load cover image: \(error)")
                 }
             }
         }
