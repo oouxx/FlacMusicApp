@@ -23,31 +23,106 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     private let kuwoSongURLBase = "https://www.kuwo.cn/api/v1/www/music/playUrl"
     
     private let session: URLSession
+    private var backgroundTimer: Timer?
+    private let autoRefreshInterval: TimeInterval = 600
+    
     @Published public var isCookieValid: Bool = false
     @Published public var cookieNeedsRefresh: Bool = false
-    private var cookieString: String = ""
+    @Published public var isRefreshingCookie: Bool = false
+    
     private var currentPlatform: MusicPlatform = .kuwo
+    private var poolCookieIndex: Int = 0
     
     public init(session: URLSession = .shared) {
         self.session = session
         loadStoredCookies()
+        startBackgroundCookieRefresh()
     }
     
-    private func loadStoredCookies() {
-        if let stored = CookieStorage.shared.cookieString, !stored.isEmpty {
-            cookieString = stored
-            isCookieValid = !CookieStorage.shared.shouldRefresh
-            cookieNeedsRefresh = CookieStorage.shared.shouldRefresh
+    deinit {
+        backgroundTimer?.invalidate()
+    }
+    
+    private func startBackgroundCookieRefresh() {
+        backgroundTimer?.invalidate()
+        backgroundTimer = Timer.scheduledTimer(withTimeInterval: autoRefreshInterval, repeats: true) { [weak self] _ in
+            self?.triggerBackgroundCookieRefresh()
         }
     }
     
-    private func handleAPIError(statusCode: Int) {
-        print("[MusicAPI] API error: status \(statusCode), triggering cookie refresh")
-        cookieString = ""
+    private func triggerBackgroundCookieRefresh() {
+        guard !isRefreshingCookie else { return }
+        print("[MusicAPI] Background cookie refresh triggered")
+        DispatchQueue.main.async { [weak self] in
+            self?.cookieNeedsRefresh = true
+        }
+    }
+    
+    private func loadStoredCookies() {
+        if let stored = CookieStorage.shared.getNextValidCookie(), !stored.isEmpty {
+            isCookieValid = true
+            cookieNeedsRefresh = false
+        } else {
+            isCookieValid = false
+            cookieNeedsRefresh = true
+        }
+    }
+    
+    private func getCurrentCookie() -> String? {
+        return CookieStorage.shared.getNextValidCookie()
+    }
+    
+    private func tryNextPoolCookie() -> String? {
+        let allCookies = CookieStorage.shared.getAllPoolCookies()
+        guard !allCookies.isEmpty else { return nil }
+        
+        poolCookieIndex = (poolCookieIndex + 1) % allCookies.count
+        return allCookies[poolCookieIndex]
+    }
+    
+    private func handleAPIError(statusCode: Int, currentCookie: String?) {
+        print("[MusicAPI] API error: status \(statusCode), trying pool cookies")
+        
+        if let cookie = currentCookie {
+            CookieStorage.shared.markCookieInvalid(cookie)
+        }
+        
         signCache.removeAll()
         timeCache.removeAll()
+        
+        if let nextCookie = getCurrentCookie() {
+            print("[MusicAPI] Using next cookie from pool")
+            return
+        }
+        
+        print("[MusicAPI] No valid cookies in pool, triggering refresh")
         CookieStorage.shared.incrementRefreshCount()
-        if CookieStorage.shared.shouldAutoRefresh {
+        if CookieStorage.shared.shouldAutoRefresh || CookieStorage.shared.poolSize == 0 {
+            DispatchQueue.main.async { [weak self] in
+                self?.cookieNeedsRefresh = true
+                self?.isCookieValid = false
+            }
+        }
+    }
+    
+    private func handleAPIErrorWithCode(_ code: Int, currentCookie: String?) {
+        print("[MusicAPI] API error code: \(code), trying pool cookies")
+        
+        if let cookie = currentCookie {
+            CookieStorage.shared.markCookieInvalid(cookie)
+        }
+        
+        signCache.removeAll()
+        timeCache.removeAll()
+        
+        if let nextCookie = getCurrentCookie() {
+            print("[MusicAPI] Using next cookie from pool")
+            return
+        }
+        
+        print("[MusicAPI] No valid cookies in pool, triggering refresh")
+        CookieStorage.shared.incrementRefreshCount()
+        if CookieStorage.shared.shouldAutoRefresh || CookieStorage.shared.poolSize == 0 {
             DispatchQueue.main.async { [weak self] in
                 self?.cookieNeedsRefresh = true
                 self?.isCookieValid = false
@@ -60,7 +135,6 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             let cookieStr = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
             print("[Cookies] Got \(cookies.count) cookies")
             print("[Cookies] Cookie string: \(cookieStr.prefix(200))")
-            self?.cookieString = cookieStr
             self?.signCache.removeAll()
             self?.timeCache.removeAll()
             CookieStorage.shared.save(cookie: cookieStr)
@@ -72,7 +146,6 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     }
     
     public func clearCookies() {
-        cookieString = ""
         signCache.removeAll()
         timeCache.removeAll()
         CookieStorage.shared.clear()
@@ -121,12 +194,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             throw MusicAPIError.invalidURL
         }
         
+        let currentCookie = getCurrentCookie()
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        if !cookieString.isEmpty {
-            request.setValue(cookieString, forHTTPHeaderField: "Cookie")
-            print("[Lyrics] Using cookies: \(cookieString.prefix(100))...")
+        if let cookie = currentCookie, !cookie.isEmpty {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+            print("[Lyrics] Using cookies: \(cookie.prefix(100))...")
         }
         request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
         request.setValue(hiCNBase, forHTTPHeaderField: "Origin")
@@ -157,6 +232,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             if let code = json["code"] as? Int, code != 0 {
                 let msg = json["msg"] as? String ?? "unknown error"
                 print("[Lyrics] API error: \(code) - \(msg)")
+                handleAPIErrorWithCode(code, currentCookie: currentCookie)
             }
             if let lrc = json["data"] as? String {
                 return lrc
@@ -173,12 +249,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             throw MusicAPIError.invalidURL
         }
         
+        let currentCookie = getCurrentCookie()
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        if !cookieString.isEmpty {
-            request.setValue(cookieString, forHTTPHeaderField: "Cookie")
-            print("[MusicAPI] Using cookies: \(cookieString.prefix(100))...")
+        if let cookie = currentCookie, !cookie.isEmpty {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+            print("[MusicAPI] Using cookies: \(cookie.prefix(100))...")
         } else {
             print("[MusicAPI] WARNING: No cookies available!")
         }
@@ -204,14 +282,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {
-            handleAPIError(statusCode: httpResponse.statusCode)
+            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             throw MusicAPIError.serverError
         }
         
         let firstByte = data.first
         guard firstByte == 123 || firstByte == 91 else {
             print("[MusicAPI] Invalid JSON response, triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode)
+            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             throw MusicAPIError.serverError
         }
         
@@ -219,7 +297,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
            let code = json["code"] as? Int, code != 0 {
             let msg = json["msg"] as? String ?? "unknown"
             print("[MusicAPI] API error: code=\(code), msg=\(msg), triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode)
+            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             throw MusicAPIError.serverError
         }
         
@@ -259,12 +337,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             throw MusicAPIError.invalidURL
         }
         
+        let currentCookie = getCurrentCookie()
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        if !cookieString.isEmpty {
-            request.setValue(cookieString, forHTTPHeaderField: "Cookie")
-            print("[PlayerManager] Using cookies for getURL: \(cookieString.prefix(100))...")
+        if let cookie = currentCookie, !cookie.isEmpty {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+            print("[PlayerManager] Using cookies for getURL: \(cookie.prefix(100))...")
         } else {
             print("[PlayerManager] WARNING: No cookies for getURL!")
         }
@@ -303,7 +383,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             if let httpResponse = response as? HTTPURLResponse {
-                handleAPIError(statusCode: httpResponse.statusCode)
+                handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             }
             throw MusicAPIError.serverError
         }
@@ -313,7 +393,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         let isJSON = firstByte == 123 || firstByte == 91
         guard isPlainURL || isJSON else {
             print("[PlayerManager] Invalid response format, triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode)
+            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             throw MusicAPIError.serverError
         }
         
@@ -321,7 +401,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
            let code = json["code"] as? Int, code != 0 {
             let msg = json["msg"] as? String ?? "unknown"
             print("[PlayerManager] API error: code=\(code), msg=\(msg), triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode)
+            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
             throw MusicAPIError.serverError
         }
         

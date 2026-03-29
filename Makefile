@@ -142,6 +142,10 @@ archive-macos: check-deps
 		-sdk macosx \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive \
 		-configuration Release \
+		PRODUCT_BUNDLE_IDENTIFIER=com.example.FlacMusicApp.macOS \
+		CODE_SIGN_IDENTITY="-" \
+		CODE_SIGNING_REQUIRED=NO \
+		CODE_SIGNING_ALLOWED=NO \
 		| xcpretty 2>/dev/null || cat
 	@echo "✅ Archive → $(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive"
 
@@ -155,27 +159,44 @@ archive-ios: check-deps
 		-sdk $(IOS_SDK) \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive \
 		-configuration Release \
+		PRODUCT_BUNDLE_IDENTIFIER=com.example.FlacMusicApp.iOS \
+		CODE_SIGN_IDENTITY="-" \
+		CODE_SIGNING_REQUIRED=NO \
+		CODE_SIGNING_ALLOWED=NO \
 		| xcpretty 2>/dev/null || cat
 	@echo "✅ Archive → $(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive"
 
-# ── Export（需要 ExportOptions.plist）────────────────────────
+# ── Export（直接从 Archive 提取 .app/.ipa，无需签名）───────────────
+# 用于本地测试打包，无需 Apple Developer 账号
+
 .PHONY: export-macos
 export-macos: archive-macos
-	@mkdir -p $(EXPORT_DIR)/macos
-	xcodebuild -exportArchive \
-		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive \
-		-exportPath $(EXPORT_DIR)/macos \
-		-exportOptionsPlist ExportOptions-macOS.plist
-	@echo "✅ macOS .app → $(EXPORT_DIR)/macos/"
+	@echo "📦 提取 macOS .app..."
+	@PRODUCTS_PATH=$(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive/Products/Applications && \
+		APP_PATH=$$(find "$$PRODUCTS_PATH" -name "*.app" -type d | head -1) && \
+		if [ -n "$$APP_PATH" ]; then \
+			mkdir -p $(EXPORT_DIR)/macos && \
+			cp -r "$$APP_PATH" $(EXPORT_DIR)/macos/ && \
+			echo "✅ macOS .app → $(EXPORT_DIR)/macos/$$(basename $$APP_PATH)"; \
+		else \
+			echo "❌ 未找到 .app"; exit 1; \
+		fi
 
 .PHONY: export-ios
 export-ios: archive-ios
-	@mkdir -p $(EXPORT_DIR)/ios
-	xcodebuild -exportArchive \
-		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive \
-		-exportPath $(EXPORT_DIR)/ios \
-		-exportOptionsPlist ExportOptions-iOS.plist
-	@echo "✅ iOS .ipa → $(EXPORT_DIR)/ios/"
+	@echo "📱 创建 iOS IPA..."
+	@PRODUCTS_PATH=$(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive/Products/Applications && \
+		APP_PATH=$$(find "$$PRODUCTS_PATH" -name "*.app" -type d | head -1) && \
+		if [ -n "$$APP_PATH" ]; then \
+			mkdir -p $(EXPORT_DIR)/ios/Payload && \
+			cp -r "$$APP_PATH" $(EXPORT_DIR)/ios/Payload/ && \
+			cd $(EXPORT_DIR)/ios && \
+			zip -r FlacMusicApp.ipa Payload/ && \
+			rm -rf Payload && \
+			echo "✅ iOS .ipa → $(EXPORT_DIR)/ios/FlacMusicApp.ipa"; \
+		else \
+			echo "❌ 未找到 .app"; exit 1; \
+		fi
 
 # ── 清理 ─────────────────────────────────────────────────────
 .PHONY: clean

@@ -62,6 +62,9 @@ public final class PlaylistManager: ObservableObject {
     }
     
     public func addToQueue(_ song: Song) {
+        if queue.contains(where: { $0.id == song.id }) {
+            return
+        }
         queue.append(song)
         if playMode == .shuffle {
             shuffleOrder.append(queue.count - 1)
@@ -69,8 +72,17 @@ public final class PlaylistManager: ObservableObject {
     }
     
     public func addToQueue(_ songs: [Song]) {
+        var newSongs: [Song] = []
+        for song in songs {
+            if !queue.contains(where: { $0.id == song.id }) {
+                newSongs.append(song)
+            }
+        }
+        
+        guard !newSongs.isEmpty else { return }
+        
         let startIndex = queue.count
-        queue.append(contentsOf: songs)
+        queue.append(contentsOf: newSongs)
         if playMode == .shuffle {
             for i in startIndex..<queue.count {
                 shuffleOrder.append(i)

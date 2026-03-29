@@ -22,21 +22,17 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
 
       - name: Build macOS
-        run: |
-          xcodebuild build \
-            -scheme FlacMusicApp-macOS \
-            -sdk macosx \
-            -configuration Debug \
-            -derivedDataPath DerivedData
+        run: make build-macos
 
-      - name: Upload build artifacts
+      - name: Archive & Export macOS
+        run: make export-macos
+
+      - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macOS-build
-          path: |
-            DerivedData/Build/Products/Debug/*.app
-            DerivedData/Build/Products/Debug/*.dylib
-          retention-days: 1
+          name: macOS-app
+          path: .build/export/macos/*.app
+          retention-days: 7
 
   build-ios:
     name: Build iOS (Simulator)
@@ -50,19 +46,14 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
 
       - name: Build iOS Simulator
-        run: |
-          xcodebuild build \
-            -scheme FlacMusicApp-iOS \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -derivedDataPath DerivedData \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
-            CODE_SIGNING_ALLOWED=NO
+        run: make build-ios-sim
 
-      - name: Upload build artifacts
+      - name: Archive & Export iOS
+        run: make export-ios
+
+      - name: Upload iOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-simulator-build
-          path: |
-            DerivedData/Build/Products/Debug-iphonesimulator/*.app
-          retention-days: 1
+          name: ios-ipa
+          path: .build/export/ios/*.ipa
+          retention-days: 7
