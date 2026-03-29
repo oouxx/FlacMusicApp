@@ -7,6 +7,7 @@
 APP_NAME       = FlacMusicApp
 SCHEME_MACOS   = FlacMusicApp-macOS
 SCHEME_IOS     = FlacMusicApp-iOS
+XCODEPROJ      = FlacMusicApp.xcodeproj
 BUILD_DIR      = .build
 ARCHIVE_DIR    = $(BUILD_DIR)/archives
 EXPORT_DIR     = $(BUILD_DIR)/export
@@ -60,6 +61,7 @@ build-macos: check-deps
 	@echo "🍎 构建 macOS..."
 	@mkdir -p $(BUILD_DIR)/macos
 	xcodebuild build \
+		-project $(XCODEPROJ) \
 		-scheme $(SCHEME_MACOS) \
 		-sdk macosx \
 		-configuration Debug \
@@ -89,6 +91,7 @@ build-ios: check-deps
 	@echo "📱 构建 iOS 真机 (arm64)..."
 	@mkdir -p $(BUILD_DIR)/ios
 	xcodebuild build \
+		-project $(XCODEPROJ) \
 		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SDK) \
 		-configuration Release \
@@ -101,6 +104,7 @@ build-ios-sim: check-deps
 	@echo "🖥️  构建 iOS 模拟器 (arm64 + x86_64)..."
 	@mkdir -p $(BUILD_DIR)/ios-sim
 	xcodebuild build \
+		-project $(XCODEPROJ) \
 		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SIM_SDK) \
 		-configuration Debug \
@@ -133,6 +137,7 @@ archive-macos: check-deps
 	@mkdir -p $(ARCHIVE_DIR)
 	@echo "📦 Archive macOS..."
 	xcodebuild archive \
+		-project $(XCODEPROJ) \
 		-scheme $(SCHEME_MACOS) \
 		-sdk macosx \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-macOS.xcarchive \
@@ -145,6 +150,7 @@ archive-ios: check-deps
 	@mkdir -p $(ARCHIVE_DIR)
 	@echo "📦 Archive iOS..."
 	xcodebuild archive \
+		-project $(XCODEPROJ) \
 		-scheme $(SCHEME_IOS) \
 		-sdk $(IOS_SDK) \
 		-archivePath $(ARCHIVE_DIR)/$(APP_NAME)-iOS.xcarchive \

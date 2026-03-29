@@ -1,0 +1,53 @@
+name: FlacMusicApp
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  FlacMusicApp-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/FlacMusicApp
+        excludes:
+          - "**/FlacMusicApp_iOS.swift"
+      - path: FlacMusicApp-macOS/FlacMusicApp_macOSApp.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlacMusicApp.macOS
+        INFOPLIST_FILE: FlacMusicApp-macOS/Info.plist
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_ENTITLEMENTS: ""
+        PRODUCT_NAME: FlacMusicApp-macOS
+        COMBINE_HIDPI_IMAGES: YES
+
+  FlacMusicApp-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/FlacMusicApp
+        excludes:
+          - "**/FlacMusicApp_macOS.swift"
+      - path: FlacMusicApp-iOS/FlacMusicApp_iOSApp.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.FlacMusicApp.iOS
+        INFOPLIST_FILE: FlacMusicApp-iOS/Info.plist
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_ENTITLEMENTS: ""
+        PRODUCT_NAME: FlacMusicApp-iOS
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
