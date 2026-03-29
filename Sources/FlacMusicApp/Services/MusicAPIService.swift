@@ -213,6 +213,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
             throw MusicAPIError.serverError
         }
         
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let code = json["code"] as? Int, code != 0 {
+            let msg = json["msg"] as? String ?? "unknown"
+            print("[MusicAPI] API error: code=\(code), msg=\(msg), triggering cookie refresh")
+            handleAPIError(statusCode: httpResponse.statusCode)
+            throw MusicAPIError.serverError
+        }
+        
         // Cache signs and times from search results
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let dataObj = json["data"] as? [String: Any],
@@ -303,6 +311,14 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         let isJSON = firstByte == 123 || firstByte == 91
         guard isPlainURL || isJSON else {
             print("[PlayerManager] Invalid response format, triggering cookie refresh")
+            handleAPIError(statusCode: httpResponse.statusCode)
+            throw MusicAPIError.serverError
+        }
+        
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let code = json["code"] as? Int, code != 0 {
+            let msg = json["msg"] as? String ?? "unknown"
+            print("[PlayerManager] API error: code=\(code), msg=\(msg), triggering cookie refresh")
             handleAPIError(statusCode: httpResponse.statusCode)
             throw MusicAPIError.serverError
         }
