@@ -44,6 +44,8 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     private func handleAPIError(statusCode: Int) {
         print("[MusicAPI] API error: status \(statusCode), triggering cookie refresh")
         cookieString = ""
+        signCache.removeAll()
+        timeCache.removeAll()
         CookieStorage.shared.incrementRefreshCount()
         if CookieStorage.shared.shouldAutoRefresh {
             DispatchQueue.main.async { [weak self] in

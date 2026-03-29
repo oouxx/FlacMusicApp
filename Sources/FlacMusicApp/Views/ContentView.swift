@@ -1,13 +1,16 @@
 import SwiftUI
 import WebKit
+import Combine
 
 public struct ContentView: View {
     
     @StateObject private var searchVM = SearchViewModel()
     @StateObject private var downloadManager = DownloadManager.shared
+    @StateObject private var apiService = MusicAPIService.shared
     @State private var selectedTab: Tab = .search
     @State private var cookiesLoaded = false
     @State private var showCookieReloader = false
+    @State private var cancellables = Set<AnyCancellable>()
     
     public init() {}
     
@@ -38,10 +41,33 @@ public struct ContentView: View {
                 PlayerView()
             }
             
-            if !cookiesLoaded {
+            if !cookiesLoaded || apiService.cookieNeedsRefresh {
                 cookieFetcherView
             }
         }
+        .onChange(of: apiService.cookieNeedsRefresh) { _, newValue in
+            if newValue && cookiesLoaded {
+                #if os(macOS)
+                showCookieReloader = true
+                #else
+                Task {
+                    await searchVM.search(query: searchVM.query, reset: true)
+                }
+                #endif
+            }
+        }
+        #if os(macOS)
+        .sheet(isPresented: $showCookieReloader) {
+            CookieReloaderView(onComplete: {
+                showCookieReloader = false
+                if !searchVM.query.isEmpty {
+                    Task {
+                        await searchVM.search(query: searchVM.query, reset: true)
+                    }
+                }
+            })
+        }
+        #endif
         #if os(macOS)
         .frame(minWidth: 800, minHeight: 560)
         #endif
