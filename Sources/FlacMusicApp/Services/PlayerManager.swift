@@ -48,22 +48,26 @@ public final class PlayerManager: ObservableObject {
     }
     
     private func handleCookieInvalid() async {
-        // Clear search results
-        // Clear playlist queue
-        // Re-search with last query
-        // Add to playlist queue
         let query = lastSearchQuery
         guard !query.isEmpty else { return }
         
-        playlistManager.queue.removeAll()
-        playlistManager.currentIndex = 0
-        stop()
+        await MainActor.run {
+            playlistManager.queue.removeAll()
+            playlistManager.currentIndex = 0
+            stop()
+        }
         
         do {
             let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
             if !results.isEmpty {
-                playlistManager.setSearchResults(results)
-                if let song = playlistManager.currentSong {
+                await MainActor.run {
+                    playlistManager.setSearchResults(results)
+                }
+                let song = await MainActor.run {
+                    playlistManager.setSearchResults(results)
+                    return playlistManager.currentSong
+                }
+                if let song = song {
                     await playCurrentSong(song)
                 }
             }
@@ -73,27 +77,30 @@ public final class PlayerManager: ObservableObject {
     }
     
     private func handleSongExpired() async {
-        // Re-search with last query
-        // Add to playlist queue
-        // If search fails → refresh cookie → re-search → add
         let query = lastSearchQuery
         guard !query.isEmpty else { return }
         
         do {
             let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
             if !results.isEmpty {
-                playlistManager.setSearchResults(results)
+                await MainActor.run {
+                    playlistManager.setSearchResults(results)
+                }
             }
         } catch {
             // Re-search failed, try refreshing cookie
             print("[PlayerManager] handleSongExpired: re-search failed, trying cookie refresh")
-            CookieStorage.shared.clear()
-            MusicAPIService.shared.clearCookies()
+            await MainActor.run {
+                CookieStorage.shared.clear()
+                MusicAPIService.shared.clearCookies()
+            }
             
             do {
                 let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
                 if !results.isEmpty {
-                    playlistManager.setSearchResults(results)
+                    await MainActor.run {
+                        playlistManager.setSearchResults(results)
+                    }
                 }
             } catch {
                 print("[PlayerManager] handleSongExpired: cookie refresh re-search failed")
@@ -102,7 +109,8 @@ public final class PlayerManager: ObservableObject {
     }
     
     private func refreshQueueUrls() async {
-        for song in playlistManager.queue {
+        let songs = await MainActor.run { playlistManager.queue }
+        for song in songs {
             do {
                 _ = try await MusicAPIService.shared.getSongURL(songId: song.id, format: song.bestFormat)
             } catch {
@@ -158,7 +166,11 @@ public final class PlayerManager: ObservableObject {
             
             await MainActor.run {
                 let playerItem = AVPlayerItem(url: url)
-                player = AVPlayer(playerItem: playerItem)
+                if player == nil {
+                    player = AVPlayer(playerItem: playerItem)
+                } else {
+                    player?.replaceCurrentItem(with: playerItem)
+                }
                 
                 playerItem.publisher(for: \.status)
                     .receive(on: DispatchQueue.main)
