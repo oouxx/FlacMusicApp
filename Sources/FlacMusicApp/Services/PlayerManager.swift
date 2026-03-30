@@ -24,6 +24,9 @@ public final class PlayerManager: ObservableObject {
     
     private init() {
         setupAudioSession()
+        #if os(iOS)
+        setupRemoteCommandCenter()
+        #endif
         
         MusicAPIService.shared.onCookieRefreshed = { [weak self] in
             guard let self = self else { return }
@@ -330,6 +333,52 @@ public final class PlayerManager: ObservableObject {
         }
     }
     
+    #if os(iOS)
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            guard let self = self else { return .commandFailed }
+            if !self.isPlaying {
+                if let song = self.currentSong {
+                    Task { await self.play(song: song) }
+                }
+            }
+            return .success
+        }
+        
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            guard let self = self else { return .commandFailed }
+            if self.isPlaying {
+                self.togglePlayPause()
+            }
+            return .success
+        }
+        
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            Task { await self?.playNext() }
+            return .success
+        }
+        
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            Task { await self?.playPrevious() }
+            return .success
+        }
+        
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let event = event as? MPChangePlaybackPositionCommandEvent {
+                self?.seek(to: event.positionTime)
+            }
+            return .success
+        }
+    }
+    #endif
+    
     private func updateNowPlayingInfo() {
         guard let song = currentSong else { return }
         
@@ -343,14 +392,19 @@ public final class PlayerManager: ObservableObject {
         ]
         
         #if os(iOS)
+        // Set basic info first without artwork
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        
+        // Then load artwork asynchronously
         if let coverUrl = song.coverUrl, let url = URL(string: coverUrl) {
             Task {
                 do {
                     let (data, _) = try await URLSession.shared.data(from: url)
                     if let image = UIImage(data: data) {
                         await MainActor.run {
-                            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-                            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+                            var infoWithArtwork = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+                            infoWithArtwork[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                            MPNowPlayingInfoCenter.default().nowPlayingInfo = infoWithArtwork
                         }
                     }
                 } catch {
@@ -358,8 +412,8 @@ public final class PlayerManager: ObservableObject {
                 }
             }
         }
-        #endif
-        
+        #else
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        #endif
     }
 }
