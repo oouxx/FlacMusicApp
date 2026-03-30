@@ -349,15 +349,17 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         
         let currentCookie = getCurrentCookie()
         
+        if currentCookie == nil || currentCookie?.isEmpty == true {
+            print("[MusicAPI] No cookies available, triggering refresh")
+            onCookieInvalid?()
+            throw MusicAPIError.cookiesRequired
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        if let cookie = currentCookie, !cookie.isEmpty {
-            request.setValue(cookie, forHTTPHeaderField: "Cookie")
-            print("[MusicAPI] Using cookies: \(cookie.prefix(100))...")
-        } else {
-            print("[MusicAPI] WARNING: No cookies available!")
-        }
+        request.setValue(currentCookie, forHTTPHeaderField: "Cookie")
+        print("[MusicAPI] Using cookies: \(currentCookie!.prefix(100))...")
         request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
         request.setValue(hiCNBase, forHTTPHeaderField: "Origin")
         request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
@@ -438,15 +440,17 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         
         let currentCookie = getCurrentCookie()
         
+        if currentCookie == nil || currentCookie?.isEmpty == true {
+            print("[PlayerManager] No cookies for getURL, triggering refresh")
+            onCookieInvalid?()
+            throw MusicAPIError.cookiesRequired
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "Content-Type")
-        if let cookie = currentCookie, !cookie.isEmpty {
-            request.setValue(cookie, forHTTPHeaderField: "Cookie")
-            print("[PlayerManager] Using cookies for getURL: \(cookie.prefix(100))...")
-        } else {
-            print("[PlayerManager] WARNING: No cookies for getURL!")
-        }
+        request.setValue(currentCookie, forHTTPHeaderField: "Cookie")
+        print("[PlayerManager] Using cookies for getURL: \(currentCookie!.prefix(100))...")
         request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
         request.setValue(hiCNBase, forHTTPHeaderField: "Origin")
         request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
