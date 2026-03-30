@@ -33,6 +33,8 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     @Published public var cookieNeedsRefresh: Bool = false
     @Published public var isRefreshingCookie: Bool = false
     public var onCookieRefreshed: (() -> Void)?
+    public var onCookieInvalid: (() -> Void)?
+    public var onSongExpired: (() -> Void)?
     
     private var currentPlatform: MusicPlatform = .kuwo
     
@@ -68,9 +70,12 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     
     private func validateCookie() {
         guard let cookie = CookieStorage.shared.getNextValidCookie() else {
+            print("[MusicAPI] Heartbeat: no cookie, triggering refresh")
             triggerCookieRefresh()
             return
         }
+        
+        print("[MusicAPI] Heartbeat: starting cookie validation...")
         
         Task {
             do {
@@ -82,21 +87,40 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
                 request.setValue(hiCNBase, forHTTPHeaderField: "Referer")
                 request.httpBody = "platform=kuwo&keyword=test&page=1&size=1".data(using: .utf8)
                 
-                let (_, response) = try await session.data(for: request)
+                print("[MusicAPI] Heartbeat: sending request to validate cookie...")
+                let (data, response) = try await session.data(for: request)
                 
                 if let httpResponse = response as? HTTPURLResponse {
+                    print("[MusicAPI] Heartbeat: received response, status=\(httpResponse.statusCode)")
+                    
+                    // Check for non-JSON response
+                    let firstByte = data.first
+                    let isJSON = firstByte == 123 || firstByte == 91
+                    print("[MusicAPI] Heartbeat: isJSON=\(isJSON), firstByte=\(firstByte ?? 0)")
+                    
                     if httpResponse.statusCode == 468 {
-                        print("[MusicAPI] Heartbeat: cookie invalid (468), refreshing")
+                        print("[MusicAPI] Heartbeat: cookie invalid (status 468)")
                         CookieStorage.shared.markCookieInvalid(cookie)
                         await MainActor.run {
-                            self.triggerCookieRefresh()
+                            self.onCookieInvalid?()
+                        }
+                    } else if !isJSON {
+                        print("[MusicAPI] Heartbeat: cookie invalid (non-JSON response)")
+                        CookieStorage.shared.markCookieInvalid(cookie)
+                        await MainActor.run {
+                            self.onCookieInvalid?()
                         }
                     } else if httpResponse.statusCode != 200 {
                         print("[MusicAPI] Heartbeat: unexpected status \(httpResponse.statusCode)")
+                    } else {
+                        print("[MusicAPI] Heartbeat: cookie valid ✓")
                     }
                 }
             } catch {
-                print("[MusicAPI] Heartbeat check failed: \(error)")
+                print("[MusicAPI] Heartbeat: check failed: \(error)")
+                await MainActor.run {
+                    self.onCookieInvalid?()
+                }
             }
         }
     }
@@ -362,16 +386,17 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         
         let firstByte = data.first
         guard firstByte == 123 || firstByte == 91 else {
-            print("[MusicAPI] Invalid JSON response, triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
+            print("[MusicAPI] Invalid JSON response, cookie invalid")
+            CookieStorage.shared.markCookieInvalid(currentCookie ?? "")
+            onCookieInvalid?()
             throw MusicAPIError.serverError
         }
         
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let code = json["code"] as? Int, code != 0 {
             let msg = json["msg"] as? String ?? "unknown"
-            print("[MusicAPI] API error: code=\(code), msg=\(msg), triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
+            print("[MusicAPI] API error: code=\(code), msg=\(msg), song expired")
+            onSongExpired?()
             throw MusicAPIError.serverError
         }
         
@@ -466,16 +491,17 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         let isPlainURL = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("http") ?? false
         let isJSON = firstByte == 123 || firstByte == 91
         guard isPlainURL || isJSON else {
-            print("[PlayerManager] Invalid response format, triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
+            print("[PlayerManager] Invalid response format, cookie invalid")
+            CookieStorage.shared.markCookieInvalid(currentCookie ?? "")
+            onCookieInvalid?()
             throw MusicAPIError.serverError
         }
         
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let code = json["code"] as? Int, code != 0 {
             let msg = json["msg"] as? String ?? "unknown"
-            print("[PlayerManager] API error: code=\(code), msg=\(msg), triggering cookie refresh")
-            handleAPIError(statusCode: httpResponse.statusCode, currentCookie: currentCookie)
+            print("[PlayerManager] API error: code=\(code), msg=\(msg), song expired")
+            onSongExpired?()
             throw MusicAPIError.serverError
         }
         

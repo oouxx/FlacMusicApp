@@ -211,6 +211,7 @@ struct SongRowView: View {
             // Play button
             Button {
                 Task {
+                    PlayerManager.shared.lastSearchQuery = vm.query
                     let playlist = PlaylistManager.shared
                     if !vm.songs.isEmpty {
                         playlist.setSearchResults(vm.songs)

@@ -20,6 +20,7 @@ public final class PlayerManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var endObserver: NSObjectProtocol?
     private var lyricsLoadTask: Task<Void, Never>?  // For cancelling previous lyric load tasks
+    public var lastSearchQuery: String = ""
     
     private init() {
         setupAudioSession()
@@ -28,6 +29,74 @@ public final class PlayerManager: ObservableObject {
             guard let self = self else { return }
             Task {
                 await self.refreshQueueUrls()
+            }
+        }
+        
+        MusicAPIService.shared.onCookieInvalid = { [weak self] in
+            guard let self = self else { return }
+            Task {
+                await self.handleCookieInvalid()
+            }
+        }
+        
+        MusicAPIService.shared.onSongExpired = { [weak self] in
+            guard let self = self else { return }
+            Task {
+                await self.handleSongExpired()
+            }
+        }
+    }
+    
+    private func handleCookieInvalid() async {
+        // Clear search results
+        // Clear playlist queue
+        // Re-search with last query
+        // Add to playlist queue
+        let query = lastSearchQuery
+        guard !query.isEmpty else { return }
+        
+        playlistManager.queue.removeAll()
+        playlistManager.currentIndex = 0
+        stop()
+        
+        do {
+            let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
+            if !results.isEmpty {
+                playlistManager.setSearchResults(results)
+                if let song = playlistManager.currentSong {
+                    await playCurrentSong(song)
+                }
+            }
+        } catch {
+            print("[PlayerManager] handleCookieInvalid: re-search failed")
+        }
+    }
+    
+    private func handleSongExpired() async {
+        // Re-search with last query
+        // Add to playlist queue
+        // If search fails → refresh cookie → re-search → add
+        let query = lastSearchQuery
+        guard !query.isEmpty else { return }
+        
+        do {
+            let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
+            if !results.isEmpty {
+                playlistManager.setSearchResults(results)
+            }
+        } catch {
+            // Re-search failed, try refreshing cookie
+            print("[PlayerManager] handleSongExpired: re-search failed, trying cookie refresh")
+            CookieStorage.shared.clear()
+            MusicAPIService.shared.clearCookies()
+            
+            do {
+                let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
+                if !results.isEmpty {
+                    playlistManager.setSearchResults(results)
+                }
+            } catch {
+                print("[PlayerManager] handleSongExpired: cookie refresh re-search failed")
             }
         }
     }
@@ -113,13 +182,7 @@ public final class PlayerManager: ObservableObject {
         } catch {
             await MainActor.run {
                 isLoading = false
-            }
-            
-            if retryCount < 3 {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                await playCurrentSong(song, retryCount: retryCount + 1)
-            } else {
-                await skipToNextIfAvailable()
+                stop()
             }
         }
     }
