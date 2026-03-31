@@ -13,6 +13,8 @@ public final class SearchViewModel: ObservableObject {
 
     private let pageSize = 30
     private var searchTask: Task<Void, Never>?
+    private var silentRefreshTask: Task<Void, Never>?
+    private let signRefreshInterval: TimeInterval = 300  // 5 分钟静默刷新一次 sign
     private var cancellables = Set<AnyCancellable>()
 
     public init() {
@@ -22,15 +24,15 @@ public final class SearchViewModel: ObservableObject {
             .sink { [weak self] query in
                 guard let self = self else { return }
                 guard !query.isEmpty else {
-                    // 取消正在进行的搜索，清空结果
                     self.searchTask?.cancel()
                     self.searchTask = nil
+                    self.silentRefreshTask?.cancel()
+                    self.silentRefreshTask = nil
                     self.songs = []
                     self.isLoading = false
                     self.errorMessage = nil
                     return
                 }
-                // 直接调用而不是另起 Task，避免并发竞争
                 self.searchTask?.cancel()
                 self.searchTask = Task {
                     await self.performSearch(query: query, reset: true)
@@ -46,7 +48,6 @@ public final class SearchViewModel: ObservableObject {
         searchTask = Task {
             await performSearch(query: query, reset: reset)
         }
-        // 不 await searchTask?.value，避免旧 Task 堵塞新搜索
     }
 
     public func loadMore() async {
@@ -62,21 +63,21 @@ public final class SearchViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Private
+    // MARK: - Private Search
 
     private func performSearch(query: String, reset: Bool) async {
         if reset {
             currentPage = 1
             songs = []
+            // 新搜索开始时取消旧的静默刷新
+            silentRefreshTask?.cancel()
+            silentRefreshTask = nil
         }
 
         isLoading = true
         errorMessage = nil
 
-        defer {
-            // 无论成功、失败、取消，都保证 isLoading 重置
-            isLoading = false
-        }
+        defer { isLoading = false }
 
         guard !Task.isCancelled else { return }
 
@@ -96,14 +97,55 @@ public final class SearchViewModel: ObservableObject {
             }
             hasMore = results.count == pageSize
 
+            // 搜索成功后启动后台静默刷新，保持 sign 缓存新鲜
+            if reset {
+                scheduleSilentRefresh(query: query)
+            }
+
         } catch {
             guard !Task.isCancelled else { return }
 
             errorMessage = error.localizedDescription
 
-            // 只在明确的 Cookie 失效错误时才清除，避免网络波动误触发
             if case MusicAPIError.cookiesRequired = error {
                 MusicAPIService.shared.clearCookies()
+            }
+        }
+    }
+
+    // MARK: - Silent Sign Refresh
+
+    /// 后台定期刷新 sign 缓存，用户无感知
+    private func scheduleSilentRefresh(query: String) {
+        silentRefreshTask?.cancel()
+        silentRefreshTask = Task {
+            do {
+                try await Task.sleep(for: .seconds(signRefreshInterval))
+            } catch {
+                return  // 被取消，正常退出
+            }
+
+            guard !Task.isCancelled, !query.isEmpty else { return }
+
+            print("[Search] Silent refreshing sign cache for: \(query)")
+            do {
+                _ = try await MusicAPIService.shared.searchSongs(
+                    keyword: query,
+                    page: 1,
+                    pageSize: pageSize
+                )
+                // searchSongs 内部自动更新 signCache/timeCache
+                // 不替换 songs 列表，避免用户正在浏览时列表跳动
+                print("[Search] Silent refresh done, sign cache updated")
+
+                guard !Task.isCancelled else { return }
+                // 递归调度下一次
+                scheduleSilentRefresh(query: query)
+            } catch {
+                print("[Search] Silent refresh failed: \(error), will retry next cycle")
+                // 失败后稍等再试，不影响用户
+                guard !Task.isCancelled else { return }
+                scheduleSilentRefresh(query: query)
             }
         }
     }

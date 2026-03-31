@@ -132,7 +132,24 @@ public final class PlaylistManager: ObservableObject {
             }
         }
     }
-
+    
+    public var nextSong: Song? {
+        guard !queue.isEmpty else { return nil }
+        let nextIndex: Int
+        switch playMode {
+        case .loopOne, .loopAll:
+            nextIndex = (currentIndex + 1) % queue.count
+        case .shuffle:
+            if let currentShuffleIdx = shuffleOrder.firstIndex(of: currentIndex) {
+                nextIndex = shuffleOrder[(currentShuffleIdx + 1) % shuffleOrder.count]
+            } else { return nil }
+        case .normal:
+            guard currentIndex < queue.count - 1 else { return nil }
+            nextIndex = currentIndex + 1
+        }
+        return queue[nextIndex]
+    }
+    
     public func clearQueue() {
         queue.removeAll()
         currentIndex = 0

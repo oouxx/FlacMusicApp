@@ -1,103 +1,114 @@
-import Foundation
 import Combine
+import Foundation
 import UniformTypeIdentifiers
 
 #if os(macOS)
-import AppKit
+    import AppKit
 #elseif os(iOS)
-import UIKit
+    import UIKit
 #endif
 
 public final class DownloadManager: ObservableObject {
-    
+
     public static let shared = DownloadManager()
-    
+
     @Published public var tasks: [DownloadTask] = []
-    
+
     private lazy var downloadSession: URLSession = {
         URLSession(configuration: .default)
     }()
-    
+
     private init() {}
-    
+
     // MARK: - Download
-    
+
     public func download(song: Song, format: AudioFormat) async {
-        // 防止重复下载
         let isDuplicate = await MainActor.run {
             tasks.contains { task in
                 guard task.song.id == song.id && task.format == format else { return false }
                 switch task.state {
-                case .downloading, .completed:
-                    return true
-                default:
-                    return false
+                case .downloading, .completed: return true
+                default: return false
                 }
             }
         }
         if isDuplicate { return }
-        
+
         let task = DownloadTask(song: song, format: format)
         let taskId = task.id
-        
+
         await MainActor.run {
             tasks.append(task)
             updateTask(id: taskId) { $0.state = .downloading }
         }
-        
+
         do {
-            // 获取下载地址（网络请求，不在主线程阻塞）
             print("[DownloadManager] Getting URL for: \(song.name), format: \(format)")
-            let urlString = try await MusicAPIService.shared.getSongURL(songId: song.id, format: format)
+            let urlString = try await MusicAPIService.shared.getSongURL(
+                songId: song.id, format: format)
             print("[DownloadManager] Got URL: \(urlString)")
-            
+
             guard let url = URL(string: urlString) else {
                 await MainActor.run {
                     updateTask(id: taskId) { $0.state = .failed("无效的下载地址") }
                 }
                 return
             }
-            
-            // 执行下载（带进度）
-            let tempURL = try await downloadWithProgress(url: url, taskId: taskId)
-            
+
+            // 优先从缓存复制，避免重复下载
+            let sourceURL: URL
+            if let cached = AudioCacheManager.shared.cachedURL(
+                songId: song.id, format: format) {
+                print("[DownloadManager] Using cached file for: \(song.name)")
+                sourceURL = cached
+                await MainActor.run {
+                    updateTask(id: taskId) { $0.progress = 1.0 }
+                }
+            } else {
+                sourceURL = try await downloadWithProgress(url: url, taskId: taskId)
+                // 顺便存入播放缓存
+                AudioCacheManager.shared.store(
+                    tempURL: sourceURL, songId: song.id, format: format)
+            }
+
             // 确定保存路径
             let fileName = "\(song.artist) - \(song.name).\(format.rawValue)"
             let destURL: URL? = await MainActor.run { () -> URL? in
                 #if os(macOS)
-                let savePanel = NSSavePanel()
-                savePanel.nameFieldStringValue = sanitize(fileName)
-                savePanel.allowedContentTypes = [.audio]
-                savePanel.canCreateDirectories = true
-                let response = savePanel.runModal()
-                return response == .OK ? savePanel.url : nil
+                    let savePanel = NSSavePanel()
+                    savePanel.nameFieldStringValue = sanitize(fileName)
+                    savePanel.allowedContentTypes = [.audio]
+                    savePanel.canCreateDirectories = true
+                    let response = savePanel.runModal()
+                    return response == .OK ? savePanel.url : nil
                 #else
-                let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let sanitized = sanitize(fileName)
-                // 处理文件名冲突：如果已存在则加序号
-                var finalName = sanitized
-                var counter = 1
-                while FileManager.default.fileExists(atPath: documents.appendingPathComponent(finalName).path) {
-                    let nameWithoutExt = (sanitized as NSString).deletingPathExtension
-                    let ext = (sanitized as NSString).pathExtension
-                    finalName = "\(nameWithoutExt)_\(counter).\(ext)"
-                    counter += 1
-                }
-                return documents.appendingPathComponent(finalName)
+                    let documents = FileManager.default.urls(
+                        for: .documentDirectory, in: .userDomainMask)[0]
+                    let sanitized = sanitize(fileName)
+                    var finalName = sanitized
+                    var counter = 1
+                    while FileManager.default.fileExists(
+                        atPath: documents.appendingPathComponent(finalName).path)
+                    {
+                        let nameWithoutExt = (sanitized as NSString).deletingPathExtension
+                        let ext = (sanitized as NSString).pathExtension
+                        finalName = "\(nameWithoutExt)_\(counter).\(ext)"
+                        counter += 1
+                    }
+                    return documents.appendingPathComponent(finalName)
                 #endif
             }
-            
+
             guard let finalURL = destURL else {
                 await MainActor.run {
                     updateTask(id: taskId) { $0.state = .failed("用户取消") }
                 }
                 return
             }
-            
-            // 移动文件到目标路径
+
             try? FileManager.default.removeItem(at: finalURL)
-            try FileManager.default.moveItem(at: tempURL, to: finalURL)
-            
+            try FileManager.default.copyItem(at: sourceURL, to: finalURL)
+
             await MainActor.run {
                 updateTask(id: taskId) {
                     $0.state = .completed
@@ -106,7 +117,7 @@ public final class DownloadManager: ObservableObject {
                 }
             }
             print("[DownloadManager] Download completed: \(finalURL.lastPathComponent)")
-            
+
         } catch {
             await MainActor.run {
                 updateTask(id: taskId) { $0.state = .failed(error.localizedDescription) }
@@ -114,17 +125,16 @@ public final class DownloadManager: ObservableObject {
             print("[DownloadManager] Download failed: \(error)")
         }
     }
-    
+
     // MARK: - 带进度的下载
-    
+
     private func downloadWithProgress(url: URL, taskId: String) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             let request = URLRequest(url: url)
             var observation: NSKeyValueObservation?
-            
+
             let downloadTask = downloadSession.downloadTask(with: request) { tempURL, _, error in
                 observation?.invalidate()
-                
                 if let error = error {
                     continuation.resume(throwing: error)
                     return
@@ -133,7 +143,6 @@ public final class DownloadManager: ObservableObject {
                     continuation.resume(throwing: URLError(.badServerResponse))
                     return
                 }
-                // 把临时文件移到不会被系统清理的位置
                 let keepURL = FileManager.default.temporaryDirectory
                     .appendingPathComponent(UUID().uuidString)
                     .appendingPathExtension(url.pathExtension)
@@ -144,30 +153,28 @@ public final class DownloadManager: ObservableObject {
                     continuation.resume(throwing: error)
                 }
             }
-            
-            // KVO 监听下载进度
+
             observation = downloadTask.observe(\.countOfBytesReceived) { [weak self] task, _ in
                 let total = task.countOfBytesExpectedToReceive
                 let received = task.countOfBytesReceived
                 guard total > 0 else { return }
                 let progress = Double(received) / Double(total)
-                
                 Task { @MainActor in
                     self?.updateTask(id: taskId) { $0.progress = progress }
                 }
             }
-            
+
             downloadTask.resume()
         }
     }
-    
+
     // MARK: - Task Management
-    
+
     @MainActor
     public func removeTask(_ task: DownloadTask) {
         tasks.removeAll { $0.id == task.id }
     }
-    
+
     @MainActor
     public func clearCompleted() {
         tasks.removeAll {
@@ -175,15 +182,13 @@ public final class DownloadManager: ObservableObject {
             return false
         }
     }
-    
-    // MARK: - Helpers
-    
+
     @MainActor
     private func updateTask(id: String, update: (inout DownloadTask) -> Void) {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         update(&tasks[index])
     }
-    
+
     private func sanitize(_ name: String) -> String {
         let invalid = CharacterSet(charactersIn: "/\\:*?\"<>|")
         return name.components(separatedBy: invalid).joined(separator: "_")

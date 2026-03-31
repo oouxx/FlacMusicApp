@@ -15,12 +15,17 @@ public final class PlayerManager: ObservableObject {
     @Published public var currentLyrics: String = ""
 
     private let playlistManager = PlaylistManager.shared
+    private let cache = AudioCacheManager.shared
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
     private var endObserver: NSObjectProtocol?
     private var lyricsLoadTask: Task<Void, Never>?
+    private var prefetchTask: Task<Void, Never>?
     public var lastSearchQuery: String = ""
+
+    private var isHandlingCookieInvalid = false
+    private var isHandlingSongExpired = false
 
     private init() {
         setupAudioSession()
@@ -30,26 +35,19 @@ public final class PlayerManager: ObservableObject {
 
         MusicAPIService.shared.onCookieRefreshed = { [weak self] in
             guard let self = self else { return }
-            Task {
-                await self.refreshQueueUrls()
-            }
+            Task { await self.refreshQueueUrls() }
         }
-
         MusicAPIService.shared.onCookieInvalid = { [weak self] in
             guard let self = self else { return }
-            Task {
-                await self.handleCookieInvalid()
-            }
+            Task { await self.handleCookieInvalid() }
         }
-
         MusicAPIService.shared.onSongExpired = { [weak self] in
             guard let self = self else { return }
-            Task {
-                await self.handleSongExpired()
-            }
+            Task { await self.handleSongExpired() }
         }
     }
-    private var isHandlingCookieInvalid = false
+
+    // MARK: - Cookie / Expiry Handlers
 
     private func handleCookieInvalid() async {
         guard !isHandlingCookieInvalid else {
@@ -58,6 +56,7 @@ public final class PlayerManager: ObservableObject {
         }
         isHandlingCookieInvalid = true
         defer { isHandlingCookieInvalid = false }
+
         let query = lastSearchQuery
         guard !query.isEmpty else { return }
 
@@ -71,13 +70,10 @@ public final class PlayerManager: ObservableObject {
             let results = try await MusicAPIService.shared.searchSongs(
                 keyword: query, page: 1, pageSize: 30)
             guard !results.isEmpty else { return }
-
-            // 合并为一次 MainActor 调用，避免重复 setSearchResults
             let song = await MainActor.run {
                 playlistManager.setSearchResults(results)
                 return playlistManager.currentSong
             }
-
             if let song = song {
                 await playCurrentSong(song)
             }
@@ -85,8 +81,6 @@ public final class PlayerManager: ObservableObject {
             print("[PlayerManager] handleCookieInvalid: re-search failed")
         }
     }
-    
-    private var isHandlingSongExpired = false
 
     private func handleSongExpired() async {
         guard !isHandlingSongExpired else {
@@ -95,31 +89,30 @@ public final class PlayerManager: ObservableObject {
         }
         isHandlingSongExpired = true
         defer { isHandlingSongExpired = false }
-        
+
         let query = lastSearchQuery
         guard !query.isEmpty else { return }
-        
+
         do {
-            let results = try await MusicAPIService.shared.searchSongs(keyword: query, page: 1, pageSize: 30)
+            let results = try await MusicAPIService.shared.searchSongs(
+                keyword: query, page: 1, pageSize: 30)
             if !results.isEmpty {
-                await MainActor.run {
-                    playlistManager.setSearchResults(results)
-                }
+                await MainActor.run { playlistManager.setSearchResults(results) }
             }
         } catch {
-            print("[PlayerManager] handleSongExpired: re-search failed, trying cookie refresh")
+            print("[PlayerManager] handleSongExpired: clearing cookie")
             await MainActor.run {
                 CookieStorage.shared.clear()
                 MusicAPIService.shared.clearCookies()
             }
-            // cookie 清掉后不再重试搜索，等用户触发或心跳恢复
-            print("[PlayerManager] handleSongExpired: cookie cleared, waiting for refresh")
         }
     }
 
     private func refreshQueueUrls() async {
         let songs = await MainActor.run { playlistManager.queue }
         for song in songs {
+            // 已缓存的跳过
+            if cache.cachedURL(songId: song.id, format: song.bestFormat) != nil { continue }
             do {
                 _ = try await MusicAPIService.shared.getSongURL(
                     songId: song.id, format: song.bestFormat)
@@ -128,6 +121,40 @@ public final class PlayerManager: ObservableObject {
             }
         }
     }
+
+    // MARK: - Prefetch
+
+    private func prefetchNextSongURL() {
+        prefetchTask?.cancel()
+        guard let nextSong = playlistManager.nextSong else { return }
+
+        // 已缓存无需预取
+        if cache.cachedURL(songId: nextSong.id, format: nextSong.bestFormat) != nil {
+            print("[PlayerManager] Next song already cached: \(nextSong.name)")
+            return
+        }
+
+        prefetchTask = Task.detached(priority: .background) { [weak self] in
+            guard let self = self else { return }
+            do {
+                try Task.checkCancellation()
+                let urlString = try await MusicAPIService.shared.getSongURL(
+                    songId: nextSong.id, format: nextSong.bestFormat)
+                try Task.checkCancellation()
+                // 后台下载并存入缓存
+                guard let url = URL(string: urlString) else { return }
+                let tempURL = try await self.downloadToTemp(url: url)
+                self.cache.store(tempURL: tempURL, songId: nextSong.id, format: nextSong.bestFormat)
+                print("[PlayerManager] Prefetch cached: \(nextSong.name)")
+            } catch is CancellationError {
+                // 正常取消
+            } catch {
+                print("[PlayerManager] Prefetch failed for \(nextSong.name): \(error)")
+            }
+        }
+    }
+
+    // MARK: - Audio Session
 
     private func setupAudioSession() {
         #if os(iOS)
@@ -153,39 +180,59 @@ public final class PlayerManager: ObservableObject {
         let oldPlayer = player
         let oldObserver = timeObserver
         let oldEndObserver = endObserver
+        prefetchTask?.cancel()
 
         await MainActor.run {
             isLoading = true
             currentSong = song
-
-            // 清理旧的 time observer
             if let observer = oldObserver, let p = oldPlayer {
                 p.removeTimeObserver(observer)
             }
             timeObserver = nil
-
-            // 显式移除旧的 end observer，避免重复触发跳曲
             if let observer = oldEndObserver {
                 NotificationCenter.default.removeObserver(observer)
             }
             endObserver = nil
-
-            // 清理旧的订阅，避免 cancellables 无限积累
             cancellables.removeAll()
-
             oldPlayer?.pause()
         }
 
         do {
-            let urlString = try await MusicAPIService.shared.getSongURL(
-                songId: song.id, format: song.bestFormat)
-            guard let url = URL(string: urlString) else {
-                await MainActor.run { isLoading = false }
-                return
+            let playURL: URL
+
+            // 1️⃣ 优先命中缓存，直接本地播放
+            if let cachedURL = cache.cachedURL(songId: song.id, format: song.bestFormat) {
+                print("[PlayerManager] Cache hit: \(song.name)")
+                playURL = cachedURL
+            } else {
+                // 2️⃣ 未缓存：获取远程 URL
+                print("[PlayerManager] Cache miss: \(song.name), fetching remote URL")
+                let urlString = try await MusicAPIService.shared.getSongURL(
+                    songId: song.id, format: song.bestFormat)
+                guard let remoteURL = URL(string: urlString) else {
+                    await MainActor.run { isLoading = false }
+                    return
+                }
+
+                // 3️⃣ 后台下载到临时文件并存入缓存，同时开始流播放
+                // 先用远程 URL 流播，下载完成后缓存供下次使用
+                Task.detached(priority: .background) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        let tempURL = try await self.downloadToTemp(url: remoteURL)
+                        self.cache.store(
+                            tempURL: tempURL, songId: song.id, format: song.bestFormat)
+                        print("[PlayerManager] Background cached: \(song.name)")
+                    } catch {
+                        print("[PlayerManager] Background cache failed: \(error)")
+                    }
+                }
+
+                playURL = remoteURL
             }
 
             await MainActor.run {
-                let playerItem = AVPlayerItem(url: url)
+                let playerItem = AVPlayerItem(url: playURL)
                 if player == nil {
                     player = AVPlayer(playerItem: playerItem)
                 } else {
@@ -197,7 +244,8 @@ public final class PlayerManager: ObservableObject {
                     .sink { [weak self] status in
                         if status == .readyToPlay {
                             self?.duration =
-                                playerItem.duration.seconds.isNaN ? 0 : playerItem.duration.seconds
+                                playerItem.duration.seconds.isNaN
+                                ? 0 : playerItem.duration.seconds
                             self?.isLoading = false
                         }
                     }
@@ -207,12 +255,22 @@ public final class PlayerManager: ObservableObject {
                 setupEndObserver()
                 player?.play()
                 isPlaying = true
-
                 updateNowPlayingInfo()
             }
 
             loadLyrics(songId: song.id)
+            prefetchNextSongURL()
+
         } catch {
+            if retryCount == 0 {
+                print("[PlayerManager] URL failed, silently refreshing sign for: \(song.name)")
+                let refreshed = await silentRefreshSign(for: song)
+                if refreshed {
+                    await playCurrentSong(song, retryCount: 1)
+                    return
+                }
+            }
+            print("[PlayerManager] Playback failed after retry: \(error)")
             await MainActor.run {
                 isLoading = false
                 stop()
@@ -220,12 +278,52 @@ public final class PlayerManager: ObservableObject {
         }
     }
 
+    private func silentRefreshSign(for song: Song) async -> Bool {
+        let query = lastSearchQuery.isEmpty ? song.name : lastSearchQuery
+        do {
+            let results = try await MusicAPIService.shared.searchSongs(
+                keyword: query, page: 1, pageSize: 30)
+            return results.contains { $0.id == song.id }
+        } catch {
+            print("[PlayerManager] silentRefreshSign failed: \(error)")
+            return false
+        }
+    }
+
+    // MARK: - Download Helper
+
+    /// 下载文件到临时目录，供缓存使用
+    private func downloadToTemp(url: URL) async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            let task = URLSession.shared.downloadTask(with: url) { tempURL, _, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let tempURL = tempURL else {
+                    continuation.resume(throwing: URLError(.badServerResponse))
+                    return
+                }
+                let keepURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension(url.pathExtension)
+                do {
+                    try FileManager.default.moveItem(at: tempURL, to: keepURL)
+                    continuation.resume(returning: keepURL)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+            task.resume()
+        }
+    }
+
+    // MARK: - End Observer
+
     private func setupEndObserver() {
-        // 先移除旧的，再注册新的，防止重复
         if let observer = endObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: player?.currentItem,
@@ -281,32 +379,25 @@ public final class PlayerManager: ObservableObject {
 
     public func togglePlayPause() {
         guard let player = player else { return }
-        if isPlaying {
-            player.pause()
-        } else {
-            player.play()
-        }
+        if isPlaying { player.pause() } else { player.play() }
         isPlaying.toggle()
         updateNowPlayingInfo()
     }
 
     public func stop() {
-        // 清理 end observer
         if let observer = endObserver {
             NotificationCenter.default.removeObserver(observer)
             endObserver = nil
         }
-
-        // 清理 time observer
         if let observer = timeObserver, let p = player {
             p.removeTimeObserver(observer)
             timeObserver = nil
         }
-
+        prefetchTask?.cancel()
+        prefetchTask = nil
         cancellables.removeAll()
         lyricsLoadTask?.cancel()
         lyricsLoadTask = nil
-
         player?.pause()
         player = nil
         isPlaying = false
@@ -314,22 +405,19 @@ public final class PlayerManager: ObservableObject {
         currentTime = 0
         duration = 0
         currentLyrics = ""
-
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
+
+    // MARK: - Lyrics
 
     private func loadLyrics(songId: String) {
         lyricsLoadTask?.cancel()
         lyricsLoadTask = Task {
             do {
-                // 在网络请求前检查是否已被取消
                 try Task.checkCancellation()
                 let lyrics = try await MusicAPIService.shared.getLyrics(songId: songId)
-                // 请求返回后再次检查，避免写入已切歌的状态
                 try Task.checkCancellation()
-                await MainActor.run {
-                    currentLyrics = lyrics
-                }
+                await MainActor.run { currentLyrics = lyrics }
             } catch is CancellationError {
                 print("[PlayerManager] Lyrics load cancelled for \(songId)")
             } catch {
@@ -338,6 +426,8 @@ public final class PlayerManager: ObservableObject {
         }
     }
 
+    // MARK: - Seek / Time
+
     public func seek(to time: Double) {
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)
         player?.seek(to: cmTime)
@@ -345,27 +435,24 @@ public final class PlayerManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    // MARK: - Private
-
     private func setupTimeObserver() {
         guard let player = player else { return }
-
         if let observer = timeObserver {
             player.removeTimeObserver(observer)
             timeObserver = nil
         }
-
         let interval = CMTime(seconds: 0.5, preferredTimescale: 600)
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) {
             [weak self] time in
             guard let self = self else { return }
             self.currentTime = time.seconds.isNaN ? 0 : time.seconds
-
-            if let duration = self.player?.currentItem?.duration.seconds, !duration.isNaN {
-                self.duration = duration
+            if let d = self.player?.currentItem?.duration.seconds, !d.isNaN {
+                self.duration = d
             }
         }
     }
+
+    // MARK: - Remote Command Center
 
     #if os(iOS)
         private func setupRemoteCommandCenter() {
@@ -374,35 +461,27 @@ public final class PlayerManager: ObservableObject {
             commandCenter.playCommand.isEnabled = true
             commandCenter.playCommand.addTarget { [weak self] _ in
                 guard let self = self else { return .commandFailed }
-                if !self.isPlaying {
-                    if let song = self.currentSong {
-                        Task { await self.play(song: song) }
-                    }
+                if !self.isPlaying, let song = self.currentSong {
+                    Task { await self.play(song: song) }
                 }
                 return .success
             }
-
             commandCenter.pauseCommand.isEnabled = true
             commandCenter.pauseCommand.addTarget { [weak self] _ in
                 guard let self = self else { return .commandFailed }
-                if self.isPlaying {
-                    self.togglePlayPause()
-                }
+                if self.isPlaying { self.togglePlayPause() }
                 return .success
             }
-
             commandCenter.nextTrackCommand.isEnabled = true
             commandCenter.nextTrackCommand.addTarget { [weak self] _ in
                 self?.playNext()
                 return .success
             }
-
             commandCenter.previousTrackCommand.isEnabled = true
             commandCenter.previousTrackCommand.addTarget { [weak self] _ in
                 self?.playPrevious()
                 return .success
             }
-
             commandCenter.changePlaybackPositionCommand.isEnabled = true
             commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
                 if let event = event as? MPChangePlaybackPositionCommandEvent {
@@ -413,10 +492,11 @@ public final class PlayerManager: ObservableObject {
         }
     #endif
 
+    // MARK: - Now Playing Info
+
     private func updateNowPlayingInfo() {
         guard let song = currentSong else { return }
-
-        var info: [String: Any] = [
+        let info: [String: Any] = [
             MPMediaItemPropertyTitle: song.name,
             MPMediaItemPropertyArtist: song.artist,
             MPMediaItemPropertyAlbumTitle: song.album,
@@ -424,22 +504,18 @@ public final class PlayerManager: ObservableObject {
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
         ]
-
         #if os(iOS)
             MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-
             if let coverUrl = song.coverUrl, let url = URL(string: coverUrl) {
                 Task {
                     do {
                         let (data, _) = try await URLSession.shared.data(from: url)
                         if let image = UIImage(data: data) {
                             await MainActor.run {
-                                var infoWithArtwork =
-                                    MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-                                infoWithArtwork[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(
-                                    boundsSize: image.size
-                                ) { _ in image }
-                                MPNowPlayingInfoCenter.default().nowPlayingInfo = infoWithArtwork
+                                var i = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+                                i[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(
+                                    boundsSize: image.size) { _ in image }
+                                MPNowPlayingInfoCenter.default().nowPlayingInfo = i
                             }
                         }
                     } catch {
