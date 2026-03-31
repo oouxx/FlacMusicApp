@@ -450,6 +450,10 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
                     if let timeVal = item["time"] as? Int {
                         timeCache[id] = timeVal
                     }
+                    if let sign = item["sign"] as? String {
+                        signCache[id] = sign
+                    }
+
                 }
             }
         }
