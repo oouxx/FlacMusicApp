@@ -246,17 +246,33 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
     public func updateCookies(from webView: WKWebView) {
         webView.configuration.websiteDataStore.httpCookieStore.getAllCookies {
             [weak self] cookies in
-            let cookieStr = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+            guard let self else { return }
+
+            let dict = Dictionary(uniqueKeysWithValues: cookies.map { ($0.name, $0.value) })
+            let session = dict["sl-session"] ?? ""
+            let jwt = dict["sl_jwt_session"] ?? ""
+
             print("[Cookies] Got \(cookies.count) cookies")
+            print("[Cookies] sl-session=\(session.isEmpty ? "❌" : "✅") sl_jwt_session=\(jwt.isEmpty ? "❌" : "✅")")
+
+            // 关键 Cookie 不齐全，拒绝保存，继续等待
+            guard !session.isEmpty && !jwt.isEmpty else {
+                print("[Cookies] Missing required cookies, ignoring this callback")
+                return
+            }
+
+            let cookieStr = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
             print("[Cookies] Cookie string: \(cookieStr.prefix(200))")
-            self?.signCache.removeAll()
-            self?.timeCache.removeAll()
+
+            self.signCache.removeAll()
+            self.timeCache.removeAll()
             CookieStorage.shared.save(cookieStr)
+
             DispatchQueue.main.async {
-                self?.isCookieValid = true
-                self?.cookieNeedsRefresh = false
-                self?.isRefreshingCookie = false
-                self?.onCookieRefreshed?()
+                self.isCookieValid = true
+                self.cookieNeedsRefresh = false
+                self.isRefreshingCookie = false
+                self.onCookieRefreshed?()
             }
         }
     }
