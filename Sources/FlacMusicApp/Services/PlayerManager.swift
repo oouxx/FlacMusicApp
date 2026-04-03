@@ -31,6 +31,7 @@ public final class PlayerManager: ObservableObject {
         setupAudioSession()
         #if os(iOS)
             setupRemoteCommandCenter()
+            setupAudioSessionObservers()
         #endif
 
         MusicAPIService.shared.onCookieRefreshed = { [weak self] in
@@ -77,8 +78,10 @@ public final class PlayerManager: ObservableObject {
             if let song = song {
                 await playCurrentSong(song)
             }
+        } catch MusicAPIError.cookiesRequired {
+            print("[PlayerManager] handleCookieInvalid: cookie not ready yet, waiting for refresh")
         } catch {
-            print("[PlayerManager] handleCookieInvalid: re-search failed")
+            print("[PlayerManager] handleCookieInvalid: re-search failed: \(error)")
         }
     }
 
@@ -111,7 +114,6 @@ public final class PlayerManager: ObservableObject {
     private func refreshQueueUrls() async {
         let songs = await MainActor.run { playlistManager.queue }
         for song in songs {
-            // 已缓存的跳过
             if cache.cachedURL(songId: song.id, format: song.bestFormat) != nil { continue }
             do {
                 _ = try await MusicAPIService.shared.getSongURL(
@@ -128,7 +130,6 @@ public final class PlayerManager: ObservableObject {
         prefetchTask?.cancel()
         guard let nextSong = playlistManager.nextSong else { return }
 
-        // 已缓存无需预取
         if cache.cachedURL(songId: nextSong.id, format: nextSong.bestFormat) != nil {
             print("[PlayerManager] Next song already cached: \(nextSong.name)")
             return
@@ -141,13 +142,12 @@ public final class PlayerManager: ObservableObject {
                 let urlString = try await MusicAPIService.shared.getSongURL(
                     songId: nextSong.id, format: nextSong.bestFormat)
                 try Task.checkCancellation()
-                // 后台下载并存入缓存
                 guard let url = URL(string: urlString) else { return }
                 let tempURL = try await self.downloadToTemp(url: url)
-                self.cache.store(tempURL: tempURL, songId: nextSong.id, format: nextSong.bestFormat)
+                self.cache.store(
+                    tempURL: tempURL, songId: nextSong.id, format: nextSong.bestFormat)
                 print("[PlayerManager] Prefetch cached: \(nextSong.name)")
             } catch is CancellationError {
-                // 正常取消
             } catch {
                 print("[PlayerManager] Prefetch failed for \(nextSong.name): \(error)")
             }
@@ -158,14 +158,126 @@ public final class PlayerManager: ObservableObject {
 
     private func setupAudioSession() {
         #if os(iOS)
-            do {
-                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-                try AVAudioSession.sharedInstance().setActive(true)
-            } catch {
-                print("Failed to setup audio session: \(error)")
-            }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("[PlayerManager] Failed to setup audio session: \(error)")
+        }
         #endif
     }
+
+    #if os(iOS)
+    private func setupAudioSessionObservers() {
+        // 打断监听（来电话、Siri、其他 App 抢占音频）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
+
+        // 路由变化监听（拔耳机等）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance()
+        )
+
+        // App 进入后台/前台时确保 session 激活
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleAudioSessionInterruption(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+        else { return }
+
+        switch type {
+        case .began:
+            print("[PlayerManager] Audio session interrupted (began)")
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if self.isPlaying {
+                    self.player?.pause()
+                    self.isPlaying = false
+                    self.updateNowPlayingInfo()
+                }
+            }
+
+        case .ended:
+            guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else {
+                return
+            }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            print("[PlayerManager] Audio session interruption ended, shouldResume=\(options.contains(.shouldResume))")
+
+            if options.contains(.shouldResume) {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    do {
+                        try AVAudioSession.sharedInstance().setActive(true)
+                        self.player?.play()
+                        self.isPlaying = true
+                        self.updateNowPlayingInfo()
+                    } catch {
+                        print("[PlayerManager] Failed to reactivate audio session: \(error)")
+                        // session 激活失败时尝试重新播放当前歌曲
+                        if let song = self.currentSong {
+                            Task { await self.playCurrentSong(song) }
+                        }
+                    }
+                }
+            }
+
+        @unknown default:
+            break
+        }
+    }
+
+    @objc private func handleRouteChange(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
+        else { return }
+
+        switch reason {
+        case .oldDeviceUnavailable:
+            // 拔耳机，iOS 惯例暂停
+            print("[PlayerManager] Output device disconnected, pausing")
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.player?.pause()
+                self.isPlaying = false
+                self.updateNowPlayingInfo()
+            }
+
+        case .newDeviceAvailable:
+            // 插入耳机，不自动恢复（遵循系统惯例）
+            print("[PlayerManager] New output device available")
+
+        default:
+            break
+        }
+    }
+
+    @objc private func handleAppBecomeActive() {
+        // App 回到前台时确保 AVAudioSession 仍然激活
+        guard isPlaying else { return }
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("[PlayerManager] Failed to reactivate session on foreground: \(error)")
+        }
+    }
+    #endif
 
     // MARK: - Playback Control
 
@@ -200,12 +312,10 @@ public final class PlayerManager: ObservableObject {
         do {
             let playURL: URL
 
-            // 1️⃣ 优先命中缓存，直接本地播放
             if let cachedURL = cache.cachedURL(songId: song.id, format: song.bestFormat) {
                 print("[PlayerManager] Cache hit: \(song.name)")
                 playURL = cachedURL
             } else {
-                // 2️⃣ 未缓存：获取远程 URL
                 print("[PlayerManager] Cache miss: \(song.name), fetching remote URL")
                 let urlString = try await MusicAPIService.shared.getSongURL(
                     songId: song.id, format: song.bestFormat)
@@ -214,8 +324,6 @@ public final class PlayerManager: ObservableObject {
                     return
                 }
 
-                // 3️⃣ 后台下载到临时文件并存入缓存，同时开始流播放
-                // 先用远程 URL 流播，下载完成后缓存供下次使用
                 Task.detached(priority: .background) { [weak self] in
                     guard let self = self else { return }
                     do {
@@ -239,14 +347,49 @@ public final class PlayerManager: ObservableObject {
                     player?.replaceCurrentItem(with: playerItem)
                 }
 
+                // 监听 playerItem 状态，包括 .failed
                 playerItem.publisher(for: \.status)
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] status in
-                        if status == .readyToPlay {
-                            self?.duration =
+                        guard let self else { return }
+                        switch status {
+                        case .readyToPlay:
+                            self.duration =
                                 playerItem.duration.seconds.isNaN
                                 ? 0 : playerItem.duration.seconds
-                            self?.isLoading = false
+                            self.isLoading = false
+
+                        case .failed:
+                            let err = playerItem.error?.localizedDescription ?? "unknown"
+                            print("[PlayerManager] PlayerItem failed: \(err)")
+                            self.isLoading = false
+                            // item 失败时自动重试一次
+                            if let song = self.currentSong {
+                                Task { await self.playCurrentSong(song, retryCount: 1) }
+                            }
+
+                        default:
+                            break
+                        }
+                    }
+                    .store(in: &cancellables)
+
+                // 监听 AVPlayer 自身状态
+                self.player?.publisher(for: \.timeControlStatus)
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] status in
+                        guard let self else { return }
+                        switch status {
+                        case .playing:
+                            if !self.isPlaying { self.isPlaying = true }
+                        case .paused:
+                            // 只有用户主动暂停才同步，不要覆盖 isPlaying
+                            break
+                        case .waitingToPlayAtSpecifiedRate:
+                            // 缓冲中，不做额外处理
+                            break
+                        @unknown default:
+                            break
                         }
                     }
                     .store(in: &cancellables)
@@ -292,7 +435,6 @@ public final class PlayerManager: ObservableObject {
 
     // MARK: - Download Helper
 
-    /// 下载文件到临时目录，供缓存使用
     private func downloadToTemp(url: URL) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             let task = URLSession.shared.downloadTask(with: url) { tempURL, _, error in
@@ -455,41 +597,48 @@ public final class PlayerManager: ObservableObject {
     // MARK: - Remote Command Center
 
     #if os(iOS)
-        private func setupRemoteCommandCenter() {
-            let commandCenter = MPRemoteCommandCenter.shared()
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
 
-            commandCenter.playCommand.isEnabled = true
-            commandCenter.playCommand.addTarget { [weak self] _ in
-                guard let self = self else { return .commandFailed }
-                if !self.isPlaying, let song = self.currentSong {
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            guard let self = self else { return .commandFailed }
+            if !self.isPlaying {
+                if let song = self.currentSong {
+                    do {
+                        try AVAudioSession.sharedInstance().setActive(true)
+                    } catch {
+                        print("[PlayerManager] Failed to activate session for play command")
+                    }
                     Task { await self.play(song: song) }
                 }
-                return .success
             }
-            commandCenter.pauseCommand.isEnabled = true
-            commandCenter.pauseCommand.addTarget { [weak self] _ in
-                guard let self = self else { return .commandFailed }
-                if self.isPlaying { self.togglePlayPause() }
-                return .success
-            }
-            commandCenter.nextTrackCommand.isEnabled = true
-            commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-                self?.playNext()
-                return .success
-            }
-            commandCenter.previousTrackCommand.isEnabled = true
-            commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-                self?.playPrevious()
-                return .success
-            }
-            commandCenter.changePlaybackPositionCommand.isEnabled = true
-            commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
-                if let event = event as? MPChangePlaybackPositionCommandEvent {
-                    self?.seek(to: event.positionTime)
-                }
-                return .success
-            }
+            return .success
         }
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            guard let self = self else { return .commandFailed }
+            if self.isPlaying { self.togglePlayPause() }
+            return .success
+        }
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            self?.playNext()
+            return .success
+        }
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            self?.playPrevious()
+            return .success
+        }
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let event = event as? MPChangePlaybackPositionCommandEvent {
+                self?.seek(to: event.positionTime)
+            }
+            return .success
+        }
+    }
     #endif
 
     // MARK: - Now Playing Info
@@ -505,26 +654,26 @@ public final class PlayerManager: ObservableObject {
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
         ]
         #if os(iOS)
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-            if let coverUrl = song.coverUrl, let url = URL(string: coverUrl) {
-                Task {
-                    do {
-                        let (data, _) = try await URLSession.shared.data(from: url)
-                        if let image = UIImage(data: data) {
-                            await MainActor.run {
-                                var i = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-                                i[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(
-                                    boundsSize: image.size) { _ in image }
-                                MPNowPlayingInfoCenter.default().nowPlayingInfo = i
-                            }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        if let coverUrl = song.coverUrl, let url = URL(string: coverUrl) {
+            Task {
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        await MainActor.run {
+                            var i = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+                            i[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(
+                                boundsSize: image.size) { _ in image }
+                            MPNowPlayingInfoCenter.default().nowPlayingInfo = i
                         }
-                    } catch {
-                        print("[PlayerManager] Failed to load cover image: \(error)")
                     }
+                } catch {
+                    print("[PlayerManager] Failed to load cover image: \(error)")
                 }
             }
+        }
         #else
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         #endif
     }
 }

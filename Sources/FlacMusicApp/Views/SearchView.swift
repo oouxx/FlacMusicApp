@@ -1,30 +1,40 @@
 import SwiftUI
 
-// MARK: - Search View
-
 public struct SearchView: View {
-    
+
     @EnvironmentObject private var vm: SearchViewModel
     @EnvironmentObject private var downloadManager: DownloadManager
-    
+    @AppStorage("selectedPlatform") private var selectedPlatform: String = MusicPlatform.kuwo.rawValue
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Search bar
                 SearchBarView(text: $vm.query)
                     .padding(.horizontal)
                     .padding(.vertical, 8)
-                
+
+                // 当前音乐源指示
+                HStack {
+                    Image(systemName: "music.note.house")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("当前源：\(currentPlatformName)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 6)
+
                 Divider()
-                
-                // Content area
+
                 ZStack {
                     if vm.songs.isEmpty && !vm.isLoading {
                         emptyState
                     } else {
                         songList
                     }
-                    
+
                     if vm.isLoading && vm.songs.isEmpty {
                         loadingIndicator
                     }
@@ -35,10 +45,20 @@ public struct SearchView: View {
             .navigationSubtitle("搜索 · 下载 FLAC 高品质音乐")
             #endif
         }
+        .onChange(of: selectedPlatform) { _, newValue in
+            // 平台切换后如果有搜索词，自动重新搜索
+            if !vm.query.isEmpty {
+                Task { await vm.search(query: vm.query, reset: true) }
+            }
+        }
     }
-    
+
+    private var currentPlatformName: String {
+        MusicPlatform(rawValue: selectedPlatform)?.displayName ?? "酷我"
+    }
+
     // MARK: - Components
-    
+
     private var songList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
@@ -46,11 +66,10 @@ public struct SearchView: View {
                     SongRowView(song: song)
                         .environmentObject(vm)
                         .environmentObject(downloadManager)
-                    
                     Divider()
                         .padding(.leading, 70)
                 }
-                
+
                 if vm.hasMore {
                     Button {
                         Task { await vm.loadMore() }
@@ -110,7 +129,7 @@ extension SearchView {
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var loadingIndicator: some View {
         VStack(spacing: 12) {
             ProgressView()
@@ -126,19 +145,19 @@ extension SearchView {
 
 struct SearchBarView: View {
     @Binding var text: String
-    
+
     var body: some View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
-            
+
             TextField("搜索歌曲、歌手、专辑...", text: $text)
                 .textFieldStyle(.plain)
                 #if os(iOS)
                 .keyboardType(.webSearch)
                 .submitLabel(.search)
                 #endif
-            
+
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -161,54 +180,43 @@ struct SongRowView: View {
     let song: Song
     @EnvironmentObject private var vm: SearchViewModel
     @EnvironmentObject private var downloadManager: DownloadManager
-    @State private var showingFormatPicker = false
-    @State private var isLoadingURL = false
-    @State private var urlError: String? = nil
-    @State private var resolvedURL: String? = nil
-    
+
     var body: some View {
         HStack(spacing: 12) {
-            // Cover
             CoverImageView(url: song.coverUrl)
                 .frame(width: 52, height: 52)
                 .cornerRadius(6)
-            
-            // Info
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(song.name)
                     .font(.system(size: 15, weight: .medium))
                     .lineLimit(1)
-                
+
                 HStack(spacing: 4) {
                     Text(song.artist)
                         .font(.callout)
                         .foregroundColor(.secondary)
-                    
                     Text("·")
                         .foregroundColor(.secondary.opacity(0.5))
-                    
                     Text(song.album)
                         .font(.callout)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
-                
+
                 HStack(spacing: 6) {
                     ForEach(song.formats, id: \.rawValue) { fmt in
                         FormatBadge(format: fmt)
                     }
-                    
                     Spacer()
-                    
                     Text(song.durationString)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             Spacer(minLength: 0)
-            
-            // Play button
+
             Button {
                 Task {
                     PlayerManager.shared.lastSearchQuery = vm.query
@@ -224,15 +232,14 @@ struct SongRowView: View {
                     .foregroundColor(.accentColor)
             }
             .buttonStyle(.plain)
-            
-            // Download button
+
             downloadButton
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
-    
+
     @ViewBuilder
     private var downloadButton: some View {
         if song.formats.count > 1 {
@@ -241,8 +248,10 @@ struct SongRowView: View {
                     Button {
                         Task { await downloadManager.download(song: song, format: fmt) }
                     } label: {
-                        Label(fmt.displayName + (fmt.isLossless ? " ✦" : ""),
-                              systemImage: "arrow.down.circle")
+                        Label(
+                            fmt.displayName + (fmt.isLossless ? " ✦" : ""),
+                            systemImage: "arrow.down.circle"
+                        )
                     }
                 }
             } label: {
@@ -269,7 +278,7 @@ struct SongRowView: View {
 
 struct FormatBadge: View {
     let format: AudioFormat
-    
+
     var body: some View {
         Text(format.displayName)
             .font(.system(size: 10, weight: .semibold))
@@ -285,7 +294,7 @@ struct FormatBadge: View {
 
 struct CoverImageView: View {
     let url: String?
-    
+
     var body: some View {
         if let urlStr = url, let imageURL = URL(string: urlStr) {
             AsyncImage(url: imageURL) { phase in
@@ -304,7 +313,7 @@ struct CoverImageView: View {
             placeholder
         }
     }
-    
+
     private var placeholder: some View {
         ZStack {
             Color.secondary.opacity(0.1)

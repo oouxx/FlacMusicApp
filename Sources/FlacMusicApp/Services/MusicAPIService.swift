@@ -2,7 +2,8 @@ import Combine
 import Foundation
 import WebKit
 
-public enum MusicPlatform: String, CaseIterable, Sendable {
+public enum MusicPlatform: String, CaseIterable, Sendable, Identifiable {
+    public var id: String { rawValue }
     case kuwo = "kuwo"
     case netease = "wyy"
 

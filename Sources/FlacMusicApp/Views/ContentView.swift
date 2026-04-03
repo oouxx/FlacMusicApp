@@ -14,6 +14,10 @@ public struct ContentView: View {
     @State private var silentRefreshTrigger = false
     @State private var showVerificationSheet = false
 
+    // 持久化平台选择，启动时恢复
+    @AppStorage("selectedPlatform") private var selectedPlatform: String = MusicPlatform.kuwo
+        .rawValue
+
     public init() {}
 
     // MARK: - Body
@@ -35,12 +39,12 @@ public struct ContentView: View {
         }
         .sheet(isPresented: $showVerificationSheet) {
             #if os(iOS)
-            CookieVerificationSheet {
-                showVerificationSheet = false
-                MusicAPIService.shared.isRefreshingCookie = false
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
+                CookieVerificationSheet {
+                    showVerificationSheet = false
+                    MusicAPIService.shared.isRefreshingCookie = false
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             #endif
         }
         .onChange(of: apiService.cookieNeedsRefresh) { _, newValue in
@@ -64,18 +68,18 @@ public struct ContentView: View {
             await handleLaunch()
         }
         #if os(macOS)
-        .frame(minWidth: 800, minHeight: 560)
+            .frame(minWidth: 800, minHeight: 560)
         #endif
     }
 
     // MARK: - Launch Logic
 
     private func handleLaunch() async {
+        // 恢复持久化的平台设置
+        if let p = MusicPlatform(rawValue: selectedPlatform) {
+            MusicAPIService.shared.setPlatform(p)
+        }
         await MainActor.run { appState = .loadingCookie }
-        // 有没有 Cookie 都走 loadingCookie 状态
-        // 有 Cookie → CookieWebView 加载时已有缓存，验证页会快速通过拿到新 Cookie
-        // 无 Cookie → CookieWebView 等用户完成人机验证
-        // 两种情况统一由 CookieWebView 的 onCookiesReady 回调处理，不做分支
     }
 
     private func enterMainInterface() {
@@ -108,6 +112,10 @@ public struct ContentView: View {
                             return false
                         }.count
                     )
+
+                SettingsView()
+                    .tabItem { Label("设置", systemImage: "gearshape") }
+                    .tag(Tab.settings)
             }
             PlayerView()
         }
@@ -117,60 +125,60 @@ public struct ContentView: View {
 
     private var launchScreen: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            #if os(iOS)
+                Color(.systemBackground)
+            #else
+                Color(NSColor.windowBackgroundColor).opacity(0.05)
+            #endif
 
             if appState == .loadingCookie {
-                // 无论有没有旧 Cookie，统一显示可见 WebView 完成验证
                 #if os(iOS)
-                VStack(spacing: 0) {
-                    // 顶部 App 标识
-                    VStack(spacing: 10) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 0.24, green: 0.07, blue: 0.47),
-                                            Color(red: 0.49, green: 0.19, blue: 1.0),
-                                            Color(red: 0.77, green: 0.30, blue: 1.0),
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                    VStack(spacing: 0) {
+                        VStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color(red: 0.24, green: 0.07, blue: 0.47),
+                                                Color(red: 0.49, green: 0.19, blue: 1.0),
+                                                Color(red: 0.77, green: 0.30, blue: 1.0),
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
-                                )
-                                .frame(width: 72, height: 72)
-                                .shadow(color: .purple.opacity(0.4), radius: 16, y: 6)
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: .purple.opacity(0.4), radius: 16, y: 6)
 
-                            Image(systemName: "music.note")
-                                .font(.system(size: 32, weight: .medium))
-                                .foregroundStyle(.white)
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 32, weight: .medium))
+                                    .foregroundStyle(.white)
+                            }
+
+                            Text("FlacMusic")
+                                .font(.system(size: 22, weight: .semibold, design: .rounded))
+
+                            Text("完成验证后自动进入")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                        .padding(.top, 24)
+                        .padding(.bottom, 16)
 
-                        Text("FlacMusic")
-                            .font(.system(size: 22, weight: .semibold, design: .rounded))
-
-                        Text("完成验证后自动进入")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 24)
-                    .padding(.bottom, 16)
-
-                    // 可见 WebView，用户可交互完成验证
-                    CookieWebView { webView in
-                        MusicAPIService.shared.updateCookies(from: webView)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            enterMainInterface()
+                        CookieWebView { webView in
+                            MusicAPIService.shared.updateCookies(from: webView)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                enterMainInterface()
+                            }
                         }
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
                 #endif
             } else {
-                // launching 状态短暂过渡
                 VStack(spacing: 24) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -209,26 +217,26 @@ public struct ContentView: View {
         }
     }
 
-    // MARK: - Silent Refresh（主界面已显示时后台静默刷新）
+    // MARK: - Silent Refresh
 
     private var silentCookieFetcherView: some View {
         #if os(iOS)
-        SilentCookieWebView(
-            onCookiesReady: { webView in
-                MusicAPIService.shared.updateCookies(from: webView)
-                DispatchQueue.main.async {
+            SilentCookieWebView(
+                onCookiesReady: { webView in
+                    MusicAPIService.shared.updateCookies(from: webView)
+                    DispatchQueue.main.async {
+                        silentRefreshTrigger = false
+                        MusicAPIService.shared.isRefreshingCookie = false
+                    }
+                },
+                onNeedsManualVerification: {
                     silentRefreshTrigger = false
-                    MusicAPIService.shared.isRefreshingCookie = false
+                    showVerificationSheet = true
                 }
-            },
-            onNeedsManualVerification: {
-                silentRefreshTrigger = false
-                showVerificationSheet = true
-            }
-        )
-        .frame(width: 0, height: 0)
+            )
+            .frame(width: 0, height: 0)
         #else
-        EmptyView()
+            EmptyView()
         #endif
     }
 
@@ -242,6 +250,6 @@ public struct ContentView: View {
     }
 
     enum Tab {
-        case search, downloads
+        case search, downloads, settings
     }
 }
