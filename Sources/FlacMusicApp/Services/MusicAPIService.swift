@@ -58,11 +58,13 @@ public enum MusicProvider: String, CaseIterable, Sendable, Identifiable {
     public var id: String { rawValue }
     case hiCN = "hican"
     case gdStudio = "gdstudio"
+    case paojiao = "paojiao"
 
     var displayName: String {
         switch self {
         case .hiCN: return "Hi音乐"
         case .gdStudio: return "GD Studio"
+        case .paojiao: return "泡椒音乐"
         }
     }
 
@@ -70,6 +72,7 @@ public enum MusicProvider: String, CaseIterable, Sendable, Identifiable {
         switch self {
         case .hiCN: return [.kuwo, .neteaseHi]
         case .gdStudio: return MusicSource.allCases.filter { $0 != .neteaseHi }
+        case .paojiao: return [.kuwo]
         }
     }
 
@@ -77,6 +80,7 @@ public enum MusicProvider: String, CaseIterable, Sendable, Identifiable {
         switch self {
         case .hiCN: return [.kuwo, .neteaseHi]
         case .gdStudio: return [.netease, .kuwo, .joox, .bilibili]
+        case .paojiao: return [.kuwo]
         }
     }
 }
@@ -127,11 +131,13 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
 
     private var hiCNProvider: HiCNProvider!
     private var gdStudioProvider: GDStudioProvider!
+    private var paojiaoProvider: PaojiaoProvider!
 
     private var activeProvider: MusicProviderProtocol {
         switch currentProvider {
         case .hiCN: return hiCNProvider
         case .gdStudio: return gdStudioProvider
+        case .paojiao: return paojiaoProvider
         }
     }
 
@@ -153,6 +159,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         self.session = session
         hiCNProvider = HiCNProvider(session: session, source: currentSource)
         gdStudioProvider = GDStudioProvider(session: session, source: currentSource)
+        paojiaoProvider = PaojiaoProvider(session: session, source: currentSource)
 
         hiCNProvider.onCookieInvalid = { [weak self] in
             DispatchQueue.main.async {

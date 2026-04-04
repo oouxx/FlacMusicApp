@@ -19,11 +19,10 @@ final class GDStudioProvider: MusicProviderProtocol {
             throw MusicAPIError.invalidURL
         }
 
-        let encodedKeyword = keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? keyword
         components.queryItems = [
             URLQueryItem(name: "types", value: "search"),
             URLQueryItem(name: "source", value: source.rawValue),
-            URLQueryItem(name: "name", value: encodedKeyword),
+            URLQueryItem(name: "name", value: keyword),
             URLQueryItem(name: "count", value: String(pageSize)),
             URLQueryItem(name: "pages", value: String(page)),
         ]

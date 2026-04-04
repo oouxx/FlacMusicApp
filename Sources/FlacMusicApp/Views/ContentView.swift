@@ -101,6 +101,7 @@ public struct ContentView: View {
                 SearchView()
                     .environmentObject(searchVM)
                     .environmentObject(downloadManager)
+                    .environmentObject(apiService)
                     .tabItem { Label("搜索", systemImage: "magnifyingglass") }
                     .tag(Tab.search)
 

@@ -4,7 +4,7 @@ public struct SearchView: View {
 
     @EnvironmentObject private var vm: SearchViewModel
     @EnvironmentObject private var downloadManager: DownloadManager
-    @AppStorage("selectedSource") private var selectedSource: String = MusicSource.kuwo.rawValue
+    @EnvironmentObject private var apiService: MusicAPIService
 
     public var body: some View {
         NavigationStack {
@@ -45,7 +45,7 @@ public struct SearchView: View {
             .navigationSubtitle("搜索 · 下载 FLAC 高品质音乐")
             #endif
         }
-        .onChange(of: selectedSource) { _, newValue in
+        .onChange(of: apiService.currentSourcePublic) { _, _ in
             if !vm.query.isEmpty {
                 Task { await vm.search(query: vm.query, reset: true) }
             }
@@ -53,7 +53,9 @@ public struct SearchView: View {
     }
 
     private var currentPlatformName: String {
-        MusicSource(rawValue: selectedSource)?.displayName ?? "酷我"
+        let provider = MusicAPIService.shared.currentProviderPublic
+        let source = MusicAPIService.shared.currentSourcePublic
+        return "\(provider.displayName) · \(source.displayName)"
     }
 
     // MARK: - Components

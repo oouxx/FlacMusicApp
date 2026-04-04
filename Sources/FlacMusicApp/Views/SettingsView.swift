@@ -26,10 +26,11 @@ public struct SettingsView: View {
         Section {
             providerRow(.hiCN)
             providerRow(.gdStudio)
+            providerRow(.paojiao)
         } header: {
             Text("服务平台")
         } footer: {
-            Text("切换平台后音乐源列表会自动更新。Hi音乐需要Cookie验证，GD Studio无需验证。")
+            Text("切换平台后音乐源列表会自动更新。Hi音乐需要Cookie验证，GD Studio和泡椒音乐无需验证。")
         }
     }
 
