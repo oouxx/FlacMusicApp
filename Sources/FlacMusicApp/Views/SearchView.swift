@@ -4,7 +4,7 @@ public struct SearchView: View {
 
     @EnvironmentObject private var vm: SearchViewModel
     @EnvironmentObject private var downloadManager: DownloadManager
-    @AppStorage("selectedPlatform") private var selectedPlatform: String = MusicPlatform.kuwo.rawValue
+    @AppStorage("selectedSource") private var selectedSource: String = MusicSource.kuwo.rawValue
 
     public var body: some View {
         NavigationStack {
@@ -45,8 +45,7 @@ public struct SearchView: View {
             .navigationSubtitle("搜索 · 下载 FLAC 高品质音乐")
             #endif
         }
-        .onChange(of: selectedPlatform) { _, newValue in
-            // 平台切换后如果有搜索词，自动重新搜索
+        .onChange(of: selectedSource) { _, newValue in
             if !vm.query.isEmpty {
                 Task { await vm.search(query: vm.query, reset: true) }
             }
@@ -54,7 +53,7 @@ public struct SearchView: View {
     }
 
     private var currentPlatformName: String {
-        MusicPlatform(rawValue: selectedPlatform)?.displayName ?? "酷我"
+        MusicSource(rawValue: selectedSource)?.displayName ?? "酷我"
     }
 
     // MARK: - Components

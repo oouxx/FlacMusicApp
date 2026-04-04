@@ -97,8 +97,7 @@ public final class SearchViewModel: ObservableObject {
             }
             hasMore = results.count == pageSize
 
-            // 搜索成功后启动后台静默刷新，保持 sign 缓存新鲜
-            if reset {
+            if reset && MusicAPIService.shared.currentProvider == .hiCN {
                 scheduleSilentRefresh(query: query)
             }
 

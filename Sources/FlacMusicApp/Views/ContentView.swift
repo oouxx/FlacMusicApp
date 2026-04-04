@@ -15,8 +15,8 @@ public struct ContentView: View {
     @State private var showVerificationSheet = false
 
     // 持久化平台选择，启动时恢复
-    @AppStorage("selectedPlatform") private var selectedPlatform: String = MusicPlatform.kuwo
-        .rawValue
+    @AppStorage("selectedProvider") private var selectedProviderRaw: String = MusicProvider.hiCN.rawValue
+    @AppStorage("selectedSource") private var selectedSourceRaw: String = MusicSource.kuwo.rawValue
 
     public init() {}
 
@@ -75,9 +75,11 @@ public struct ContentView: View {
     // MARK: - Launch Logic
 
     private func handleLaunch() async {
-        // 恢复持久化的平台设置
-        if let p = MusicPlatform(rawValue: selectedPlatform) {
-            MusicAPIService.shared.setPlatform(p)
+        if let p = MusicProvider(rawValue: selectedProviderRaw) {
+            MusicAPIService.shared.setProvider(p)
+        }
+        if let s = MusicSource(rawValue: selectedSourceRaw) {
+            MusicAPIService.shared.setSource(s)
         }
         await MainActor.run { appState = .loadingCookie }
     }
