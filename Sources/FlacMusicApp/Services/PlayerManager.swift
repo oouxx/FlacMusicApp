@@ -632,14 +632,7 @@ public final class PlayerManager: ObservableObject {
         commandCenter.playCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if !self.isPlaying {
-                if let song = self.currentSong {
-                    do {
-                        try AVAudioSession.sharedInstance().setActive(true)
-                    } catch {
-                        print("[PlayerManager] Failed to activate session for play command")
-                    }
-                    Task { await self.play(song: song) }
-                }
+                self.player?.play()
             }
             return .success
         }
