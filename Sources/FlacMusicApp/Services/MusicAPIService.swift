@@ -157,6 +157,7 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
 
     public init(session: URLSession = .shared) {
         self.session = session
+        loadStoredProviderAndSource()
         hiCNProvider = HiCNProvider(session: session, source: currentSource)
         gdStudioProvider = GDStudioProvider(session: session, source: currentSource)
         paojiaoProvider = PaojiaoProvider(session: session, source: currentSource)
@@ -204,12 +205,28 @@ public final class MusicAPIService: @unchecked Sendable, ObservableObject {
         }
         hiCNProvider.source = currentSource
         gdStudioProvider.source = currentSource
+        paojiaoProvider.source = currentSource
+        UserDefaults.standard.set(provider.rawValue, forKey: "savedProvider")
+        UserDefaults.standard.set(currentSource.rawValue, forKey: "savedSource")
     }
 
     public func setSource(_ source: MusicSource) {
         currentSource = source
         hiCNProvider.source = source
         gdStudioProvider.source = source
+        paojiaoProvider.source = source
+        UserDefaults.standard.set(source.rawValue, forKey: "savedSource")
+    }
+
+    private func loadStoredProviderAndSource() {
+        if let raw = UserDefaults.standard.string(forKey: "savedProvider"),
+           let provider = MusicProvider(rawValue: raw) {
+            currentProvider = provider
+        }
+        if let raw = UserDefaults.standard.string(forKey: "savedSource"),
+           let source = MusicSource(rawValue: raw) {
+            currentSource = source
+        }
     }
 
     public var currentProviderPublic: MusicProvider { currentProvider }

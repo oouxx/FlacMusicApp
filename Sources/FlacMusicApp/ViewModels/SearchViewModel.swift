@@ -53,7 +53,7 @@ public final class SearchViewModel: ObservableObject {
     public func loadMore() async {
         guard !isLoading, hasMore, !query.isEmpty else { return }
         currentPage += 1
-        await search(query: query, reset: false)
+        await performSearch(query: query, reset: false)
     }
 
     public func retry() {

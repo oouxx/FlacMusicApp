@@ -18,7 +18,7 @@ public final class AudioCacheManager: @unchecked Sendable {
     // MARK: - Meta（LRU 记录）
 
     private struct CacheMeta: Codable {
-        var entries: [String: Entry]  // key = cacheKey
+        var entries: [String: Entry]
 
         struct Entry: Codable {
             let fileName: String
@@ -43,14 +43,14 @@ public final class AudioCacheManager: @unchecked Sendable {
 
     // MARK: - Public API
 
-    /// 缓存 key：songId + format
-    public func cacheKey(songId: String, format: AudioFormat) -> String {
-        "\(songId)_\(format.rawValue)"
+    /// 缓存 key：provider + songId + format
+    public func cacheKey(provider: MusicProvider, songId: String, format: AudioFormat) -> String {
+        "\(provider.rawValue)_\(songId)_\(format.rawValue)"
     }
 
     /// 检查是否已缓存，返回本地 URL
-    public func cachedURL(songId: String, format: AudioFormat) -> URL? {
-        let key = cacheKey(songId: songId, format: format)
+    public func cachedURL(provider: MusicProvider, songId: String, format: AudioFormat) -> URL? {
+        let key = cacheKey(provider: provider, songId: songId, format: format)
         lock.lock()
         defer { lock.unlock() }
 
@@ -74,8 +74,8 @@ public final class AudioCacheManager: @unchecked Sendable {
 
     /// 将下载好的临时文件移入缓存，返回缓存 URL
     @discardableResult
-    public func store(tempURL: URL, songId: String, format: AudioFormat) -> URL? {
-        let key = cacheKey(songId: songId, format: format)
+    public func store(tempURL: URL, provider: MusicProvider, songId: String, format: AudioFormat) -> URL? {
+        let key = cacheKey(provider: provider, songId: songId, format: format)
         let fileName = "\(key).\(format.rawValue)"
         let destURL = cacheDir.appendingPathComponent(fileName)
 
@@ -83,7 +83,6 @@ public final class AudioCacheManager: @unchecked Sendable {
         defer { lock.unlock() }
 
         do {
-            // 已存在则先删掉
             try? FileManager.default.removeItem(at: destURL)
             try FileManager.default.copyItem(at: tempURL, to: destURL)
 
@@ -117,6 +116,65 @@ public final class AudioCacheManager: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return meta.entries.count
+    }
+
+    public struct CacheEntryInfo: Identifiable {
+        public let id: String
+        public let provider: MusicProvider
+        public let songId: String
+        public let format: AudioFormat
+        public let fileSize: Int64
+        public let lastAccessed: Date
+
+        public var displayName: String {
+            "\(provider.displayName) · \(songId)"
+        }
+    }
+
+    public var allEntries: [CacheEntryInfo] {
+        lock.lock()
+        defer { lock.unlock() }
+        return meta.entries.compactMap { key, entry -> CacheEntryInfo? in
+            let parts = key.split(separator: "_")
+            guard parts.count >= 3,
+                  let provider = MusicProvider(rawValue: String(parts[0])),
+                  let format = AudioFormat(rawValue: String(parts.last!))
+            else { return nil }
+            let songId = parts.dropFirst().dropLast().joined(separator: "_")
+            return CacheEntryInfo(
+                id: key,
+                provider: provider,
+                songId: songId,
+                format: format,
+                fileSize: entry.fileSize,
+                lastAccessed: entry.lastAccessed
+            )
+        }.sorted { $0.lastAccessed > $1.lastAccessed }
+    }
+
+    public func deleteEntry(_ entry: CacheEntryInfo) {
+        lock.lock()
+        defer { lock.unlock() }
+        let fileURL = cacheDir.appendingPathComponent(entry.id + "." + entry.format.rawValue)
+        try? FileManager.default.removeItem(at: fileURL)
+        meta.entries.removeValue(forKey: entry.id)
+        saveMeta()
+        print("[AudioCache] Deleted: \(entry.id)")
+    }
+
+    public func deleteProvider(_ provider: MusicProvider) {
+        lock.lock()
+        defer { lock.unlock() }
+        let keysToDelete = meta.entries.keys.filter { $0.hasPrefix("\(provider.rawValue)_") }
+        for key in keysToDelete {
+            if let entry = meta.entries[key] {
+                let fileURL = cacheDir.appendingPathComponent(entry.fileName)
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+            meta.entries.removeValue(forKey: key)
+        }
+        saveMeta()
+        print("[AudioCache] Cleared provider: \(provider.displayName)")
     }
 
     /// 手动清空全部缓存

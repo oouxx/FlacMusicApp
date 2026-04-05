@@ -13,11 +13,13 @@ let package = Package(
             targets: ["FlacMusicApp"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
+    ],
     targets: [
         .target(
             name: "FlacMusicApp",
-            dependencies: [],
+            dependencies: ["SwiftSoup"],
             path: "Sources/FlacMusicApp",
             exclude: [
                 "FlacMusicApp_macOS.swift",

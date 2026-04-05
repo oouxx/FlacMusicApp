@@ -7,15 +7,17 @@ public struct SettingsView: View {
     public init() {}
 
     public var body: some View {
-        List {
-            Group {
-                providerSection
-                sourceSection
-                debugSection
-                aboutSection
+        NavigationStack {
+            List {
+                Group {
+                    providerSection
+                    sourceSection
+                    debugSection
+                    aboutSection
+                }
             }
+            .navigationTitle("设置")
         }
-        .navigationTitle("设置")
         .onAppear {
             selectedProvider = MusicAPIService.shared.currentProviderPublic
             selectedSource = MusicAPIService.shared.currentSourcePublic

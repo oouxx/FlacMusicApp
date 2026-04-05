@@ -56,9 +56,10 @@ public final class DownloadManager: ObservableObject {
             }
 
             // 优先从缓存复制，避免重复下载
+            let provider = MusicAPIService.shared.currentProviderPublic
             let sourceURL: URL
             if let cached = AudioCacheManager.shared.cachedURL(
-                songId: song.id, format: format) {
+                provider: provider, songId: song.id, format: format) {
                 print("[DownloadManager] Using cached file for: \(song.name)")
                 sourceURL = cached
                 await MainActor.run {
@@ -68,7 +69,7 @@ public final class DownloadManager: ObservableObject {
                 sourceURL = try await downloadWithProgress(url: url, taskId: taskId)
                 // 顺便存入播放缓存
                 AudioCacheManager.shared.store(
-                    tempURL: sourceURL, songId: song.id, format: format)
+                    tempURL: sourceURL, provider: provider, songId: song.id, format: format)
             }
 
             // 确定保存路径

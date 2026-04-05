@@ -52,7 +52,6 @@ public final class PlayerManager: ObservableObject {
 
     private func handleCookieInvalid() async {
         guard !isHandlingCookieInvalid else {
-            print("[PlayerManager] handleCookieInvalid: already in progress, skipping")
             return
         }
         isHandlingCookieInvalid = true
@@ -67,6 +66,18 @@ public final class PlayerManager: ObservableObject {
             stop()
         }
 
+        // Wait for cookie refresh (max 15s)
+        var waited: TimeInterval = 0
+        while !MusicAPIService.shared.isCookieValid, waited < 15 {
+            try? await Task.sleep(for: .seconds(0.5))
+            waited += 0.5
+        }
+
+        guard MusicAPIService.shared.isCookieValid else {
+            print("[PlayerManager] handleCookieInvalid: cookie refresh timed out")
+            return
+        }
+
         do {
             let results = try await MusicAPIService.shared.searchSongs(
                 keyword: query, page: 1, pageSize: 30)
@@ -78,8 +89,6 @@ public final class PlayerManager: ObservableObject {
             if let song = song {
                 await playCurrentSong(song)
             }
-        } catch MusicAPIError.cookiesRequired {
-            print("[PlayerManager] handleCookieInvalid: cookie not ready yet, waiting for refresh")
         } catch {
             print("[PlayerManager] handleCookieInvalid: re-search failed: \(error)")
         }
@@ -113,8 +122,9 @@ public final class PlayerManager: ObservableObject {
 
     private func refreshQueueUrls() async {
         let songs = await MainActor.run { playlistManager.queue }
+        let provider = MusicAPIService.shared.currentProviderPublic
         for song in songs {
-            if cache.cachedURL(songId: song.id, format: song.bestFormat) != nil { continue }
+            if cache.cachedURL(provider: provider, songId: song.id, format: song.bestFormat) != nil { continue }
             do {
                 _ = try await MusicAPIService.shared.getSongURL(
                     songId: song.id, format: song.bestFormat)
@@ -130,7 +140,8 @@ public final class PlayerManager: ObservableObject {
         prefetchTask?.cancel()
         guard let nextSong = playlistManager.nextSong else { return }
 
-        if cache.cachedURL(songId: nextSong.id, format: nextSong.bestFormat) != nil {
+        let provider = MusicAPIService.shared.currentProviderPublic
+        if cache.cachedURL(provider: provider, songId: nextSong.id, format: nextSong.bestFormat) != nil {
             print("[PlayerManager] Next song already cached: \(nextSong.name)")
             return
         }
@@ -145,7 +156,7 @@ public final class PlayerManager: ObservableObject {
                 guard let url = URL(string: urlString) else { return }
                 let tempURL = try await self.downloadToTemp(url: url)
                 self.cache.store(
-                    tempURL: tempURL, songId: nextSong.id, format: nextSong.bestFormat)
+                    tempURL: tempURL, provider: provider, songId: nextSong.id, format: nextSong.bestFormat)
                 print("[PlayerManager] Prefetch cached: \(nextSong.name)")
             } catch is CancellationError {
             } catch {
@@ -311,8 +322,9 @@ public final class PlayerManager: ObservableObject {
 
         do {
             let playURL: URL
+            let provider = MusicAPIService.shared.currentProviderPublic
 
-            if let cachedURL = cache.cachedURL(songId: song.id, format: song.bestFormat) {
+            if let cachedURL = cache.cachedURL(provider: provider, songId: song.id, format: song.bestFormat) {
                 print("[PlayerManager] Cache hit: \(song.name)")
                 playURL = cachedURL
             } else {
@@ -329,7 +341,7 @@ public final class PlayerManager: ObservableObject {
                     do {
                         let tempURL = try await self.downloadToTemp(url: remoteURL)
                         self.cache.store(
-                            tempURL: tempURL, songId: song.id, format: song.bestFormat)
+                            tempURL: tempURL, provider: provider, songId: song.id, format: song.bestFormat)
                         print("[PlayerManager] Background cached: \(song.name)")
                     } catch {
                         print("[PlayerManager] Background cache failed: \(error)")
@@ -363,7 +375,23 @@ public final class PlayerManager: ObservableObject {
                             let err = playerItem.error?.localizedDescription ?? "unknown"
                             print("[PlayerManager] PlayerItem failed: \(err)")
                             self.isLoading = false
-                            // item 失败时自动重试一次
+                            // If cache hit failed, delete corrupted file and retry with remote
+                            if let song = self.currentSong,
+                               let cachedURL = self.cache.cachedURL(
+                                   provider: MusicAPIService.shared.currentProviderPublic,
+                                   songId: song.id, format: song.bestFormat) {
+                                print("[PlayerManager] Cache file corrupted, deleting: \(song.name)")
+                                self.cache.deleteEntry(AudioCacheManager.CacheEntryInfo(
+                                    id: self.cache.cacheKey(
+                                        provider: MusicAPIService.shared.currentProviderPublic,
+                                        songId: song.id, format: song.bestFormat),
+                                    provider: MusicAPIService.shared.currentProviderPublic,
+                                    songId: song.id,
+                                    format: song.bestFormat,
+                                    fileSize: 0,
+                                    lastAccessed: Date()
+                                ))
+                            }
                             if let song = self.currentSong {
                                 Task { await self.playCurrentSong(song, retryCount: 1) }
                             }

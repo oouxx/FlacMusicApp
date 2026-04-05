@@ -8,15 +8,11 @@ public struct ContentView: View {
     @StateObject private var downloadManager = DownloadManager.shared
     @StateObject private var apiService = MusicAPIService.shared
 
-    @State private var selectedTab: Tab = .search
     @State private var appState: AppState = .launching
-    @State private var launchOpacity: Double = 1.0
-    @State private var silentRefreshTrigger = false
-    @State private var showVerificationSheet = false
-
-    // 持久化平台选择，启动时恢复
-    @AppStorage("selectedProvider") private var selectedProviderRaw: String = MusicProvider.hiCN.rawValue
-    @AppStorage("selectedSource") private var selectedSourceRaw: String = MusicSource.kuwo.rawValue
+    @State private var launchOpacity: Double = 0
+    @State private var selectedTab: Tab = .search
+    @State private var silentRefreshTrigger: Bool = false
+    @State private var showVerificationSheet: Bool = false
 
     public init() {}
 
@@ -75,12 +71,6 @@ public struct ContentView: View {
     // MARK: - Launch Logic
 
     private func handleLaunch() async {
-        if let p = MusicProvider(rawValue: selectedProviderRaw) {
-            MusicAPIService.shared.setProvider(p)
-        }
-        if let s = MusicSource(rawValue: selectedSourceRaw) {
-            MusicAPIService.shared.setSource(s)
-        }
         await MainActor.run { appState = .loadingCookie }
     }
 

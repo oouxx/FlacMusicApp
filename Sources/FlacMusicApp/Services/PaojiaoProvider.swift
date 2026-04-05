@@ -1,4 +1,5 @@
 import Foundation
+import SwiftSoup
 
 final class PaojiaoProvider: MusicProviderProtocol {
     let provider: MusicProvider = .paojiao
@@ -36,7 +37,7 @@ final class PaojiaoProvider: MusicProviderProtocol {
 
         print("[Paojiao] Search response: size=\(html.count) chars")
 
-        return parseSearchHTML(html)
+        return try parseSearchHTML(html)
     }
 
     func getSongURL(songId: String, format: AudioFormat) async throws -> String {
@@ -56,20 +57,30 @@ final class PaojiaoProvider: MusicProviderProtocol {
             throw MusicAPIError.parseError
         }
 
-        let urlPattern = #"url:\s*\"(https?://[^\"]+)\""#
-        guard let regex = try? NSRegularExpression(pattern: urlPattern),
-              let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
-              match.numberOfRanges >= 2,
-              let range = Range(match.range(at: 1), in: html)
-        else {
-            print("[Paojiao] No URL found in song page")
-            print("[Paojiao] HTML snippet: \(html.prefix(500))")
-            throw MusicAPIError.noDownloadURL
+        let doc = try SwiftSoup.parse(html)
+        let scripts = try doc.select("script")
+
+        for script in scripts {
+            let text = try script.html()
+            if text.contains("new APlayer") {
+                let pattern = #"url:\s*['"]([^'"]+)['"]"#
+                if let range = text.range(of: pattern, options: .regularExpression) {
+                    let match = String(text[range])
+                    let urlPattern2 = #"['"]([^'"]+)['"]"#
+                    if let urlRange = match.range(of: urlPattern2, options: .regularExpression) {
+                        let rawURL = String(match[urlRange])
+                        let audioURL = rawURL.trimmingCharacters(in: CharacterSet(charactersIn: "'\""))
+                        if audioURL.hasPrefix("http") {
+                            print("[Paojiao] Got URL: \(audioURL.prefix(100))...")
+                            return audioURL
+                        }
+                    }
+                }
+            }
         }
 
-        let audioURL = String(html[range])
-        print("[Paojiao] Got URL: \(audioURL.prefix(80))...")
-        return audioURL
+        print("[Paojiao] No URL found in APlayer config")
+        throw MusicAPIError.noDownloadURL
     }
 
     func getLyrics(songId: String) async throws -> String {
@@ -79,6 +90,7 @@ final class PaojiaoProvider: MusicProviderProtocol {
 
         var request = URLRequest(url: url)
         request.setValue("\(baseURL)", forHTTPHeaderField: "Referer")
+        request.timeoutInterval = 15
 
         print("[Paojiao] Get lyrics: songId=\(songId)")
         let (data, response) = try await session.data(for: request)
@@ -89,19 +101,12 @@ final class PaojiaoProvider: MusicProviderProtocol {
             throw MusicAPIError.parseError
         }
 
-        let lyricPattern = #"<div class="lyric-item">([^<]+)</div>"#
-        guard let regex = try? NSRegularExpression(pattern: lyricPattern) else {
-            throw MusicAPIError.parseError
-        }
-
-        let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
-        let lines = matches.compactMap { match -> String? in
-            guard let range = Range(match.range(at: 1), in: html) else { return nil }
-            return String(html[range])
-        }
+        let doc = try SwiftSoup.parse(html)
+        let items = try doc.select(".lyric-item")
+        let lines = try items.array().compactMap { try $0.text() }
 
         guard !lines.isEmpty else {
-            print("[Paojiao] No lyrics found")
+            print("[Paojiao] No lyrics found for songId=\(songId)")
             throw MusicAPIError.noData
         }
 
@@ -109,27 +114,24 @@ final class PaojiaoProvider: MusicProviderProtocol {
         return lines.joined(separator: "\n")
     }
 
-    private func parseSearchHTML(_ html: String) -> [Song] {
-        let itemPattern = #"<a\s+class="search-result-list-item[^"]*"\s+href="song\.php\?id=(\d+)"[^>]*>.*?<img\s+src="([^"]+)"[^>]*>.*?item-left-song">([^<]+).*?item-left-singer">([^<]+)"#
-        guard let regex = try? NSRegularExpression(pattern: itemPattern, options: [.dotMatchesLineSeparators]) else {
-            return []
-        }
+    private func parseSearchHTML(_ html: String) throws -> [Song] {
+        let doc = try SwiftSoup.parse(html)
+        let items = try doc.select("a.search-result-list-item")
 
-        let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
-        print("[Paojiao] Parsed \(matches.count) songs from search")
+        print("[Paojiao] Parsed \(items.array().count) songs from search")
 
-        return matches.compactMap { match -> Song? in
-            guard match.numberOfRanges >= 5,
-                  let idRange = Range(match.range(at: 1), in: html),
-                  let coverRange = Range(match.range(at: 2), in: html),
-                  let nameRange = Range(match.range(at: 3), in: html),
-                  let artistRange = Range(match.range(at: 4), in: html)
-            else { return nil }
+        return try items.array().compactMap { item -> Song? in
+            let href = try item.attr("href")
+            let id = href.replacingOccurrences(of: "song.php?id=", with: "")
+            guard !id.isEmpty, Int(id) != nil else { return nil }
 
-            let id = String(html[idRange])
-            let cover = String(html[coverRange])
-            let name = String(html[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-            let artist = String(html[artistRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let img = try item.select("img").first()
+            let cover = try img?.attr("src") ?? ""
+
+            let name = try item.select(".search-result-list-item-left-song").first()?.text() ?? ""
+            let artist = try item.select(".search-result-list-item-left-singer").first()?.text() ?? ""
+
+            guard !name.isEmpty else { return nil }
 
             return Song(id: id, name: name, artist: artist, album: "", coverUrl: cover, duration: 0, formats: [.mp3320, .mp3128])
         }
